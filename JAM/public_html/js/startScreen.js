@@ -4,7 +4,15 @@
  * and open the template in the editor.
  */
 
-var startState = {create: createStart};
+var startState = {preload: preload, create: createStart};
+
+function preload() {
+
+    game.load.image('start', 'assets/start.png', 30, 30);
+
+}
+
+
 /* Initialise the final screen */
 function createStart() {
     game.stage.backgroundColor = "#FF830F";
@@ -21,9 +29,8 @@ function createStart() {
     settingsText.events.onInputDown.add(goToSettings);
     settingsText.setTextBounds(0, 25, 800, 100);
     
-    startText = game.add.text(0, 400,
-    "Start Game",
-    {fontSize: '32px', fill: '#000', boundsAlignH: "center"});
+    startText = game.add.button(200, 400,
+    'start');
     startText.inputEnabled = true;
     startText.events.onInputDown.add(startGame);
     startText.setTextBounds(0, 35, 800, 100);
