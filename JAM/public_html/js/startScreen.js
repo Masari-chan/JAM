@@ -19,7 +19,7 @@ function createStart() {
     game.stage.backgroundColor = "#823f09";
     titleText = game.add.text(0, 100,
     "Honey Collector",
-    {fontSize: '40px', fill: '#000', boundsAlignH: "center"});
+    {fontSize: '40px', fill: '#FA9503', boundsAlignH: "center", font: "Nosifer"});
     titleText.inputEnabled = false;
     titleText.setTextBounds(0, 5, 800, 100);
     
