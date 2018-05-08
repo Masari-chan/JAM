@@ -23,7 +23,13 @@ function createStart() {
     titleText.inputEnabled = false;
     titleText.setTextBounds(0, 5, 800, 100);
     
-    settingsText = game.add.button(0, 200,
+    names = game.add.text(40, 550,
+    "Juárez Lifante, Aitana      Moreno Córcoles, Jesús      Saborit Ribelles, María",
+    {fontSize: '20px', fill: '#FA9503', boundsAlignH: "left", boundsAlignV:"bottom"});
+    names.inputEnabled = false;
+    //names.setTextBounds(0, 5, 800, 100);
+    
+    settingsText = game.add.button(10, 200,
     'settings');
     settingsText.inputEnabled = true;
     settingsText.events.onInputDown.add(goToSettings);
