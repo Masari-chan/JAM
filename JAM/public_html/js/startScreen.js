@@ -9,31 +9,31 @@ var startState = {preload: preload, create: createStart};
 function preload() {
 
     game.load.image('start', 'assets/start.png', 30, 30);
+    game.load.image('settings', 'assets/settings.png', 30, 30);
 
 }
 
 
 /* Initialise the final screen */
 function createStart() {
-    game.stage.backgroundColor = "#FF830F";
+    game.stage.backgroundColor = "#823f09";
     titleText = game.add.text(0, 100,
     "Honey Collector",
     {fontSize: '40px', fill: '#000', boundsAlignH: "center"});
     titleText.inputEnabled = false;
     titleText.setTextBounds(0, 5, 800, 100);
     
-    settingsText = game.add.text(0, 350,
-    "Settings",
-    {fontSize: '32px', fill: '#000', boundsAlignH: "center"});
+    settingsText = game.add.button(0, 200,
+    'settings');
     settingsText.inputEnabled = true;
     settingsText.events.onInputDown.add(goToSettings);
-    settingsText.setTextBounds(0, 25, 800, 100);
+    //settingsText.setTextBounds(0, 25, 800, 100);
     
-    startText = game.add.button(200, 400,
+    startText = game.add.button(500, 200,
     'start');
     startText.inputEnabled = true;
     startText.events.onInputDown.add(startGame);
-    startText.setTextBounds(0, 35, 800, 100);
+    //startText.setTextBounds(0, 35, 800, 100);
 }
 
 /* Restart game */
