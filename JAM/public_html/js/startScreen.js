@@ -27,7 +27,11 @@ function createStart() {
     "Juárez Lifante, Aitana      Moreno Córcoles, Jesús      Saborit Ribelles, María",
     {fontSize: '20px', fill: '#FA9503', boundsAlignH: "left", boundsAlignV:"bottom"});
     names.inputEnabled = false;
-    //names.setTextBounds(0, 5, 800, 100);
+    
+    groupName = game.add.text(400, 520,
+    "JAM",
+    {fontSize: '25px', fill: '#FA9503', boundsAlignH: "center", boundsAlignV:"bottom", font:"Nosifer"});
+    groupName.inputEnabled = false;
     
     settingsText = game.add.button(10, 200,
     'settings');

@@ -14,4 +14,5 @@ canvas {
     margin-left: 4em;
 }
 
-font-family: 'Nosifer', cursive;
+@font-face{font-family:'Nosifer', cursive;}
+
