@@ -6,7 +6,7 @@
 
 
 var game = new Phaser.Game(800, 600, Phaser.AUTO, 'game');
-var numStars = 12;
+var numEnemies = 12;
 var score = 0;
 var mainState = {preload: loadAssets,
 create: initialiseGame,
@@ -35,8 +35,10 @@ s.parentNode.insertBefore(wf, s);
 
 function loadAssets() {
     game.load.image('sky', 'assets/sky.png');
-    game.load.image('ground', 'assets/platform.png');
-    game.load.image('star', 'assets/star.png');
+    //road=ground
+    game.load.image('road', 'assets/platform.png');
+    //enemy= star
+    game.load.image('enemy', 'assets/star.png');
     game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
 }
 
@@ -48,7 +50,7 @@ function initialiseGame() {
     //  We will enable physics for any object that is created in this group
     platforms.enableBody = true;
 
-    var ground = platforms.create(0, game.world.height - 64, 'ground');
+    var ground = platforms.create(0, game.world.height - 64, 'road');
     
     //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
     ground.scale.setTo(2, 2); 
@@ -56,9 +58,9 @@ function initialiseGame() {
     //  This stops it from falling away when you jump on it
     ground.body.immovable = true;
 
-    var ledge = platforms.create(400, 400, 'ground');
+    var ledge = platforms.create(400, 400, 'road');
     ledge.body.immovable = true;
-    ledge = platforms.create(-150, 250, 'ground');
+    ledge = platforms.create(-150, 250, 'road');
     ledge.body.immovable = true;
 
     player = game.add.sprite(32, game.world.height - 150, 'dude');
@@ -71,16 +73,16 @@ function initialiseGame() {
 
     player.animations.add('left', [0, 1, 2, 3], 10, true);
     player.animations.add('right', [5, 6, 7, 8], 10, true);
-    stars = game.add.group();
+    enemies = game.add.group();
     
-    stars.enableBody = true;
+    enemies.enableBody = true;
 
-    for (var i = 0; i < numStars; i++) {
-        var star = stars.create(i * 70, 0, 'star');
+    for (var i = 0; i < numEnemies; i++) {
+        var enemy = enemies.create(i * 70, 0, 'enemy');
         //  Let gravity do its thing
-        star.body.gravity.y = 300;
+        enemy.body.gravity.y = 300;
         //  This just gives each star a slightly random bounce value
-        star.body.bounce.y = 0.7 + Math.random() * 0.2;
+        enemy.body.bounce.y = 0.7 + Math.random() * 0.2;
 
     }
     scoreText = game.add.text(16, 16, 'Score: ' + score,{fontSize: '32px', fill: '#000'});
@@ -90,10 +92,10 @@ function initialiseGame() {
 }
 function gameUpdate() {
     var hitPlatform = game.physics.arcade.collide(player, platforms);
-    game.physics.arcade.collide(stars, platforms);
+    game.physics.arcade.collide(enemies, platforms);
     // Checks to see if the player overlaps with any of the stars, if she
     // does call the collectStar function
-    game.physics.arcade.overlap(player, stars, collectStar, null, this);
+    game.physics.arcade.overlap(player, enemies, collectStar, null, this);
     
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
@@ -120,16 +122,16 @@ function gameUpdate() {
 
     endGame();
 }
-function collectStar(player, star) {
+function collectStar(player, ernemy) {
     // Removes the star from the screen
-    star.kill(); // star.destroy() instead frees memory also!
-    numStars--;
+    enemies.kill(); // star.destroy() instead frees memory also!
+    numEnemies--;
     // Add and update the score
     score += 10;
     scoreText.text = 'Score: ' + score;
 }
 function endGame() {
-    if (numStars == 0)
+    if (numEnemies === 0)
     game.state.start('final');
 }
 
