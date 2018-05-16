@@ -46,14 +46,15 @@ function initialiseGame() {
 
     game.add.sprite(0, 0, 'sky');
     platforms = game.add.group();
-    
+     ///////////////////////////////NEW
+    platforms.angle=75;
     //  We will enable physics for any object that is created in this group
     platforms.enableBody = true;
-
-    var road = platforms.create(0, game.world.height - 64, 'road');
-    
+ ///////////////////////////////NEW
+    var road = platforms.create(0, 0, 'road');
+    ///////////////////////////////NEW
     //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
-    road.scale.setTo(2, 2); 
+    road.scale.setTo(1, 1); 
 
     //  This stops it from falling away when you jump on it
     road.body.immovable = true;
