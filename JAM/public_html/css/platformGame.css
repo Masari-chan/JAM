@@ -4,15 +4,12 @@ To change this template file, choose Tools | Templates
 and open the template in the editor.
 */
 /* 
-    Created on : 06-may-2018, 16:45:05
-    Author     : Temy
+    Created on : 18-mar-2018, 18:35:40
+    Author     : jcamen
 */
 
 canvas {
-    border: black 5px solid;
-    margin-top: 4em;
-    margin-left: 4em;
+    border: #5f95e8 6px solid;
+    margin: auto;
+    margin-top: 2em;
 }
-
-@font-face{font-family:'Nosifer', cursive;}
-

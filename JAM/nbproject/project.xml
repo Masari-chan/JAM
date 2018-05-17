@@ -11,6 +11,9 @@
                 <file localPath="public_html/js/libs/phaser-ce/phaser.map" path="phaser.map"/>
                 <file localPath="public_html/js/libs/phaser-ce/phaser.min.js" path="phaser.min.js"/>
             </library>
+            <library name="webfont" version="1.6.28">
+                <file localPath="public_html/js/libs/webfont/webfontloader.js" path="webfontloader.js"/>
+            </library>
         </libraries>
     </configuration>
 </project>
