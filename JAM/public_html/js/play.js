@@ -225,7 +225,7 @@ function setupEnemy(enemy, plat) {
     var isRight;
     var limit;
 
-    var theEnemy = game.add.sprite(enemy.x, plat.y - ENEMY_Y_OFFSET, 'enemy');
+    var theEnemy = game.add.sprite(enemy.x,  ENEMY_Y_OFFSET , 'enemy');
     theEnemy.anchor.setTo(0.5, 0.5);
     if (enemy.right === 0) {
         theEnemy.scale.x = -1;

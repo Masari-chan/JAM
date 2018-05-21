@@ -19,7 +19,7 @@ function showInstructions() {
     game.stage.backgroundColor = "#823f09";
 
     var textTitle = 'Honey Collector';
-    var styleTitle = {font: 'Rammetto One', fontSize: '20pt', fontWeight: 'bold', fill: '#FA9503'};
+    var styleTitle = {font: 'Nosifer', fontSize: '20pt', fontWeight: 'bold', fill: '#FA9503'};
     game.add.text(75, 25, textTitle, styleTitle);
 
     var authors = 'El equipo, JAM :';
