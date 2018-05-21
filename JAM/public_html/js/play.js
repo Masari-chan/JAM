@@ -28,7 +28,7 @@ var playState = {
 };
 
 //-----------------------------------
-
+var NUM_ENEMIES=3;//numero de enemigos que varia con la dificutal
 var hudGroup, healthBar, healthValue, healthTween, hudTime;
 var remainingTime;
 var levelConfig;
@@ -96,7 +96,7 @@ function createLevel() {
   
     exitingLevel = false;
     // Set World bounds (same size as the image background in this case)
-    game.world.setBounds(0, 0, 1100, 825);
+    game.world.setBounds(0, 0, 800, 600);
 
     // Background
     var bg = game.add.tileSprite(0, 0, game.world.width, game.world.height, 'bgGame');
@@ -193,8 +193,8 @@ function createGround() {
     ground.scale.setTo(2.75, 2); // 400x32 ---> 1100x64
     ground.body.immovable = true;
 
-    for (var i = 0, max = levelConfig.ground.enemies.length; i < max; i++)
-        setupEnemy(levelConfig.ground.enemies[i], ground);
+    for (var i = 0, max = NUM_ENEMIES; i < max; i++)
+        setupEnemy(levelConfig.ground.enemies[0], ground,(i*game.world.width)/NUM_ENEMIES);
 
     for (var i = 0, max = levelConfig.ground.aids.length; i < max; i++)
         setupAid(levelConfig.ground.aids[i], ground.y);
@@ -211,8 +211,9 @@ function createPlatform(element) {
     var ledge = platforms.create(element.x, game.world.height - element.y, 'ground');
     ledge.body.immovable = true;
 
-    for (var i = 0, max = element.enemies.length; i < max; i++)
-        setupEnemy(element.enemies[i], ledge);
+    //for (var i = 0, max = element.enemies.length; i < max; i++)
+    for (var i = 0, max = NUM_ENEMIES; i < max; i++)
+        setupEnemy(element.enemies[0], ledge,(i*game.world.width)/NUM_ENEMIES);
 
     for (var i = 0, max = element.aids.length; i < max; i++)
         setupAid(element.aids[i], ledge.y);
@@ -221,20 +222,20 @@ function createPlatform(element) {
         setupStar(element.stars[i], ledge.y);
 }
 
-function setupEnemy(enemy, plat) {
+function setupEnemy(enemy, plat, posx) {
     var isRight;
     var limit;
 
-    var theEnemy = game.add.sprite(enemy.x,  ENEMY_Y_OFFSET , 'enemy');
+    var theEnemy = game.add.sprite(posx,  ENEMY_Y_OFFSET , 'enemy');
     theEnemy.anchor.setTo(0.5, 0.5);
     if (enemy.right === 0) {
         theEnemy.scale.x = -1;
         isRight = false;
-        limit = Math.max(Math.max(0, plat.x) + ENEMY_X_OFFSET, enemy.x - ENEMY_STEP_LIMIT);
+        limit = Math.max(Math.max(0, plat.x) + ENEMY_X_OFFSET, posx - ENEMY_STEP_LIMIT);
     } else {
         isRight = true;
         limit = Math.min(Math.min(plat.x + plat.width, game.world.width) - ENEMY_X_OFFSET,
-                enemy.x + ENEMY_STEP_LIMIT);
+                posx + ENEMY_STEP_LIMIT);
     }
 
     var flash = game.add.tween(theEnemy).to({alpha: 0.0}, 50, Phaser.Easing.Bounce.Out)
@@ -296,7 +297,7 @@ function updateLevel() {
 
     // Test collisions with enemies
     for (var i = enemies.length - 1; i >= 0; i--) {
-        if (enemies[i].platform === playerPlatform) {
+        /*if (enemies[i].platform === playerPlatform) {
             dist = Phaser.Math.distance(enemies[i].sprite.body.x, enemies[i].sprite.body.y,
                     player.body.x, player.body.y);
             if (Math.round(dist) <= ENEMY_DISTANCE_ATTACK)
@@ -310,9 +311,18 @@ function updateLevel() {
             patrol(enemies[i]);
         else
             attack(enemies[i], player);
-
+*/      enemies[i].sprite.body.x+=0.5;
+        enemies[i].sprite.body.y+=1;
+       
+        
         if (game.physics.arcade.collide(player, enemies[i].sprite))
             playerVsEnemy(player, enemies[i].sprite, enemies[i], i);
+        if (game.physics.arcade.collide(enemies[i].sprite,ground)){
+            enemies[i].sprite.destroy();
+            enemies.splice(i,1);
+            healthValue-=20;
+            updateHealthBar();
+            console.log("bang");}
     }
 
     //  Reset the players velocity (movement)
@@ -334,10 +344,10 @@ function updateLevel() {
     }
 
     // Allow the player to jump if touching the ground.
-    if (cursors.up.isDown && player.body.touching.down && hitPlatform) {
+    /*if (cursors.up.isDown && player.body.touching.down && hitPlatform) {
         player.body.velocity.y = -PLAYER_VELOCITY * 2;
         playerPlatform = undefined;
-    }
+    }*/
 
     // Check if player exits level and the game is over
     if (!exitingLevel)
