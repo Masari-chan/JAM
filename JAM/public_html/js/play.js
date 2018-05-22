@@ -18,7 +18,8 @@ var AID_STAR_Y_OFFSET = 30;
 var PLAYER_COLLIDE_OFFSET_X = 35;
 var PLAYER_COLLIDE_OFFSET_Y = 10;
 var score = 0;
-
+var shots;
+var keySpace;
 var levelsData = ['assets/levels/level01.json', 'assets/levels/level02.json'];
 
 var playState = {
@@ -28,7 +29,7 @@ var playState = {
 };
 
 //-----------------------------------
-var NUM_ENEMIES=3;//numero de enemigos que varia con la dificutal
+var NUM_ENEMIES=8;//numero de enemigos que varia con la dificutal
 var hudGroup, healthBar, healthValue, healthTween, hudTime;
 var remainingTime;
 var levelConfig;
@@ -76,6 +77,8 @@ function loadImages() {
     game.load.image('healthHolder', 'assets/imgs/health_holder.png');
     game.load.image('healthBar', 'assets/imgs/health_bar.png');
     game.load.image('heart', 'assets/imgs/heart.png');
+    game.load.image('shot', 'assets/imgs/shot.jpg');
+
 }
 
 function loadSounds() {
@@ -85,6 +88,7 @@ function loadSounds() {
     game.load.audio('hitenemy', 'assets/snds/snare.wav');
     game.load.audio('outoftime', 'assets/snds/klaxon4-dry.wav');
     game.load.audio('levelpassed', 'assets/snds/success.wav');
+    game.load.audio('shooting', 'assets/snds/shots.wav')
 }
 
 function loadLevel(level) {
@@ -116,6 +120,7 @@ function createLevel() {
     // Create groups with a pool of objects
     createAids();
     createStars();
+    createShots();
     totalNumOfStars = 0;
 
     // Get level data from JSON
@@ -155,7 +160,7 @@ function createLevel() {
 
     //  Our controls.
     cursors = game.input.keyboard.createCursorKeys();
-
+    keySpace = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
     // Update elapsed time each second
     timerClock = game.time.events.loop(Phaser.Timer.SECOND, updateTime, this);
 }
@@ -167,6 +172,17 @@ function createSounds() {
     soundHitEnemy = game.add.audio('hitenemy');
     soundOutOfTime = game.add.audio('outoftime');
     soundLevelPassed = game.add.audio('levelpassed');
+}
+function createShots(){
+    shots = game.add.group();
+    shots.enableBody = true;
+    shots.createMultiple(20, 'shots');
+    shots.callAll('events.onOutOfBounds.add','events.onOutOfBounds', shotKill);
+    shots.callAll('anchor.setTo', 'anchor', 0.5, 1.0);
+    shots.setAll('checkWorldBounds', true);
+};
+function shotKill(item){
+    item.kill();
 }
 
 function createAids() {
@@ -194,7 +210,7 @@ function createGround() {
     ground.body.immovable = true;
 
     for (var i = 0, max = NUM_ENEMIES; i < max; i++)
-        setupEnemy(levelConfig.ground.enemies[0], ground,(i*game.world.width)/NUM_ENEMIES);
+        setupEnemy(levelConfig.ground.enemies[0], ground,(i*(game.world.width-100))/NUM_ENEMIES);
 
     for (var i = 0, max = levelConfig.ground.aids.length; i < max; i++)
         setupAid(levelConfig.ground.aids[i], ground.y);
@@ -311,7 +327,7 @@ function updateLevel() {
             patrol(enemies[i]);
         else
             attack(enemies[i], player);
-*/      enemies[i].sprite.body.x+=0.5;
+*/      enemies[i].sprite.body.x+=0.25;
         enemies[i].sprite.body.y+=1;
        
         
@@ -342,7 +358,6 @@ function updateLevel() {
         //  Stand still
         stopPlayer();
     }
-
     // Allow the player to jump if touching the ground.
     /*if (cursors.up.isDown && player.body.touching.down && hitPlatform) {
         player.body.velocity.y = -PLAYER_VELOCITY * 2;
@@ -352,7 +367,30 @@ function updateLevel() {
     // Check if player exits level and the game is over
     if (!exitingLevel)
         game.physics.arcade.overlap(player, exit, endLevel, null, this);
+    manageShots();
 }
+
+function manageShots(){
+    if (keySpace.justDown)fireShot(); 
+}
+
+function fireShot(){
+    var x = player.x;
+    var y = player.y - 10;
+    var vy = -300;
+    var vx = -100;
+    shoot(x,y,vy,vx);
+}
+
+function shoot(x,y,vy,vx) {
+    var shot = shots.getFirstExists(false);
+    if (shot) {
+        shot.reset(x, y);
+        shot.body.velocity.x = vx;
+        shot.body.velocity.y = vy;
+    }
+    return shot;
+};
 
 function playerInPlatform(player, platform) {
     if (player.body.touching.down)
