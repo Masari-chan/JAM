@@ -346,11 +346,13 @@ function updateLevel() {
 
     if (cursors.left.isDown) {
         //  Move to the left
+        //player.body.x = player.body.x - ((game.world.width)/NUM_ENEMIES);
         player.body.velocity.x = -PLAYER_VELOCITY;
         player.animations.play('left');
         toRight = false;
     } else if (cursors.right.isDown) {
         //  Move to the right
+        // player.body.x = player.body.x + ((game.world.width)/NUM_ENEMIES);
         player.body.velocity.x = PLAYER_VELOCITY;
         player.animations.play('right');
         toRight = true;
