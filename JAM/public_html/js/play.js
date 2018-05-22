@@ -344,18 +344,20 @@ function updateLevel() {
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
 
-    if (cursors.left.isDown) {
+    if (cursors.left._justUp) {
         //  Move to the left
-        //player.body.x = player.body.x - ((game.world.width)/NUM_ENEMIES);
-        player.body.velocity.x = -PLAYER_VELOCITY;
+        player.body.x = player.body.x - ((game.world.width)/NUM_ENEMIES);
+        //player.body.velocity.x = -PLAYER_VELOCITY;
         player.animations.play('left');
         toRight = false;
-    } else if (cursors.right.isDown) {
+        cursors.left._justUp=false;
+    } else if (cursors.right._justUp) {
         //  Move to the right
-        // player.body.x = player.body.x + ((game.world.width)/NUM_ENEMIES);
-        player.body.velocity.x = PLAYER_VELOCITY;
+        player.body.x = player.body.x + ((game.world.width)/NUM_ENEMIES);
+        //player.body.velocity.x = PLAYER_VELOCITY;
         player.animations.play('right');
         toRight = true;
+        cursors.right._justUp=false;
     } else {
         //  Stand still
         stopPlayer();
