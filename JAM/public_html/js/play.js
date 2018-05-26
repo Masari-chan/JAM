@@ -19,14 +19,7 @@ var PLAYER_COLLIDE_OFFSET_X = 35;
 var PLAYER_COLLIDE_OFFSET_Y = 10;
 var score = 0;
 var shots;
-var enemies;
 var keySpace;
-var positions=[];
-const TIMER_RHYTHM=0.1*Phaser.Timer.SECOND;
-var currentEnemyProbability;
-var currentEnemyVelocity;
-var currentAidProbability;
-var currentAidVelocity;
 var levelsData = ['assets/levels/level01.json', 'assets/levels/level02.json'];
 
 var playState = {
@@ -36,12 +29,12 @@ var playState = {
 };
 
 //-----------------------------------
-
 var NUM_ENEMIES=8;//numero de enemigos que varia con la dificutal
 var hudGroup, healthBar, healthValue, healthTween, hudTime;
 var remainingTime;
 var levelConfig;
 var platforms, ground;
+var enemies = [];
 var player, cursors;
 var toRight = false;
 var firstAids, stars;
@@ -52,29 +45,16 @@ var exit;
 var timerClock;
 var exitingLevel;
 
-function createEnemy(number) {
-    enemies = game.add.group();
-    enemies.enableBody = true;
-    enemies.createMultiple(number, 'enemy');
-    enemies.callAll('events.onOutOfBounds.add','events.onOutOfBounds', shotKill);
-    enemies.callAll('anchor.setTo', 'anchor', 0.5, 1.0);
-    enemies.setAll('checkWorldBounds', true);
-    currentEnemyProbability = 0.1;
-    currentEnemyVelocity = 50;
-    game.time.events.loop(TIMER_RHYTHM, activateEnemy, this);
-};
-
-function createAid(number) {
-    firstAids = game.add.group();
-    firstAids.enableBody = true;
-    firstAids.createMultiple(number, 'aid');
-    firstAids.callAll('events.onOutOfBounds.add','events.onOutOfBounds', shotKill);
-    firstAids.callAll('anchor.setTo', 'anchor', 0.5, 1.0);
-    firstAids.setAll('checkWorldBounds', true);
-    currentAidProbability = 0.1;
-    currentAidVelocity = 50;
-    game.time.events.loop(TIMER_RHYTHM, activateAid, this);
-};
+function Enemy(spritesheet, tween, plat, right, limit) {
+    this.sprite = spritesheet;
+    this.flash = tween;
+    this.platform = plat;
+    this.faceright = right;
+    this.stepLimit = limit;
+    this.origX = spritesheet.x;
+    this.hitsToBeKilled = jumpsToKill;
+    this.isPatrolling = true;
+}
 
 function loadPlayAssets() {
     loadSprites();
@@ -127,9 +107,7 @@ function createLevel() {
     // Smooth scrolling of the background in both X and Y axis
     bg.scrollFactorX = 0.7;
     bg.scrollFactorY = 0.7;
-    for (var i=0; i<NUM_ENEMIES;i++){
-        positions[i]=(i*game.world.width-100)/NUM_ENEMIES;
-    }
+
     // Collide with this image to exit level
     exit = game.add.sprite(game.world.width - 100, game.world.height - 64, 'exit');
     game.physics.arcade.enable(exit);
@@ -140,10 +118,9 @@ function createLevel() {
     createSounds();
 
     // Create groups with a pool of objects
-    createAid(200);
+    createAids();
     createStars();
     createShots();
-    createEnemy(200);
     totalNumOfStars = 0;
 
     // Get level data from JSON
@@ -186,8 +163,6 @@ function createLevel() {
     keySpace = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
     // Update elapsed time each second
     timerClock = game.time.events.loop(Phaser.Timer.SECOND, updateTime, this);
-    //Positions of threads
-    
 }
 
 function createSounds() {
@@ -210,6 +185,13 @@ function shotKill(item){
     item.kill();
 }
 
+function createAids() {
+    firstAids = game.add.group();
+    firstAids.enableBody = true;
+    firstAids.createMultiple(MAX_AIDS, 'aid');
+    firstAids.forEach(setupItem, this);
+}
+
 function createStars() {
     stars = game.add.group();
     stars.enableBody = true;
@@ -226,14 +208,13 @@ function createGround() {
     ground = platforms.create(0, game.world.height - 64, 'ground');
     ground.scale.setTo(2.75, 2); // 400x32 ---> 1100x64
     ground.body.immovable = true;
-/*
+
     for (var i = 0, max = NUM_ENEMIES; i < max; i++)
         setupEnemy(levelConfig.ground.enemies[0], ground,(i*(game.world.width-100))/NUM_ENEMIES);
-*/
-/*
+
     for (var i = 0, max = levelConfig.ground.aids.length; i < max; i++)
         setupAid(levelConfig.ground.aids[i], ground.y);
-*/
+
     for (var i = 0, max = levelConfig.ground.stars.length; i < max; i++)
         setupStar(levelConfig.ground.stars[i], ground.y);
 }
@@ -247,18 +228,16 @@ function createPlatform(element) {
     ledge.body.immovable = true;
 
     //for (var i = 0, max = element.enemies.length; i < max; i++)
-    /*
     for (var i = 0, max = NUM_ENEMIES; i < max; i++)
         setupEnemy(element.enemies[0], ledge,(i*game.world.width)/NUM_ENEMIES);
-*/
-/*
+
     for (var i = 0, max = element.aids.length; i < max; i++)
         setupAid(element.aids[i], ledge.y);
-*/
+
     for (var i = 0, max = element.stars.length; i < max; i++)
         setupStar(element.stars[i], ledge.y);
 }
-/*
+
 function setupEnemy(enemy, plat, posx) {
     var isRight;
     var limit;
@@ -290,14 +269,12 @@ function setupEnemy(enemy, plat, posx) {
     var newEnemy = new Enemy(theEnemy, flash, plat, isRight, limit);
     enemies.push(newEnemy);
 }
-*/
-/*
+
 function setupAid(aid, floorY) {
     var item = firstAids.getFirstExists(false);
     if (item)
         item.reset(aid.x, floorY - AID_STAR_Y_OFFSET);
 }
-*/
 
 function setupStar(star, floorY) {
     var item = stars.getFirstExists(false);
@@ -325,23 +302,18 @@ function updateLevel() {
     var dist;
     //  Collide the player with the platforms
     var hitPlatform = game.physics.arcade.collide(player, platforms, playerInPlatform, null, this);
-    /*
+
     // Collide stars and first-aid with platforms
     game.physics.arcade.collide(stars, platforms);
     game.physics.arcade.collide(firstAids, platforms);
-    
+
     // Check if player overlaps with any of the stars or first aids
     game.physics.arcade.overlap(player, stars, collectStar, null, this);
-    */
-    game.physics.arcade.overlap(player, firstAids, getAid, null, this);
-    game.physics.arcade.overlap(shots,enemies,shotHitsEnemy,null,this);
-    game.physics.arcade.collide(enemies,ground,enemyHitsGround,null,this);
+    game.physics.arcade.overlap(player, firstAids, getFirstAid, null, this);
 
     // Test collisions with enemies
-    /*
     for (var i = enemies.length - 1; i >= 0; i--) {
-        
-        if (enemies[i].platform === playerPlatform) {
+        /*if (enemies[i].platform === playerPlatform) {
             dist = Phaser.Math.distance(enemies[i].sprite.body.x, enemies[i].sprite.body.y,
                     player.body.x, player.body.y);
             if (Math.round(dist) <= ENEMY_DISTANCE_ATTACK)
@@ -355,9 +327,9 @@ function updateLevel() {
             patrol(enemies[i]);
         else
             attack(enemies[i], player);
-        
-        enemies[i].sprite.body.x+=0.25;
+*/      enemies[i].sprite.body.x+=0.25;
         enemies[i].sprite.body.y+=1;
+       
         
         if (game.physics.arcade.collide(player, enemies[i].sprite))
             playerVsEnemy(player, enemies[i].sprite, enemies[i], i);
@@ -368,7 +340,7 @@ function updateLevel() {
             updateHealthBar();
             console.log("bang");}
     }
-*/
+
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
 
@@ -402,50 +374,6 @@ function updateLevel() {
     manageShots();
 }
 
-function shotHitsEnemy(shot, enemy) {
-    enemy.kill();
-    shot.kill();
-    score=score+50;
-    scoreText.setText("Score: "+score);  
-}
-
-function enemyHitsGround(enemy) {
-        enemy.kill();
-        healthValue -= 20;
-    }
-
-
-function activateEnemy() {
-if (Math.random() < currentEnemyProbability) {
-    var enemy = enemies.getFirstExists(false);
-    if (enemy) {
-        var gw = game.world.width;
-        var ow = enemy.body.width;
-        var w = gw - ow;
-        var x = positions[Math.floor(Math.random()*positions.length)];
-        var z = enemy.body.width / 2 + x;
-        enemy.reset(x, 0);
-        enemy.body.velocity.x = 20;
-        enemy.body.velocity.y = currentEnemyVelocity;
-        }
-    }
-}
-function activateAid() {
-if (Math.random() < currentAidProbability) {
-    var aid = firstAids.getFirstExists(false);
-    if (aid) {
-        var gww = game.world.width;
-        var abw = aid.body.width
-        var wa = gww - abw;
-        var xa = Math.floor(Math.random() * wa);
-        var za = aid.body.width / 2 + xa;
-        aid.reset(za, 0);
-        aid.body.velocity.x = 20;
-        aid.body.velocity.y = currentAidVelocity;
-        }
-    }
-}
-
 function manageShots(){
     if (keySpace.justDown)fireShot(); 
 }
@@ -454,7 +382,7 @@ function fireShot(){
     var x = player.x;
     var y = player.y - 10;
     var vy = -300;
-    var vx = -120;
+    var vx = -100;
     shoot(x,y,vy,vx);
 }
 
@@ -481,18 +409,11 @@ function collectStar(player, star) {
     totalNumOfStars -= 1;
 }
 
-function getAid(aid) {
-    if(healthValue < MAX_HEALTH) {
-        soundGetAid.play();
-        aid.kill();
-        if(MAX_HEALTH - healthValue < 50){
-            healthValue += MAX_HEALTH - healthValue;
-        }
-        else{
-            healthValue += 50;
-        }
-        updateHealthBar();
-    }
+function getFirstAid(player, aid) {
+    soundGetAid.play();
+    aid.kill();
+    healthValue = Math.min(MAX_HEALTH, healthValue + healthAid);
+    updateHealthBar();
 }
 
 function patrol(enemyObject) {
@@ -673,7 +594,7 @@ function nextLevel() {
         game.state.start('play');
     }
 }
-/*
+
 function clearLevel() {
     for (var i = 0, max = enemies.length; i < max; i++) {
         enemies[i].sprite.destroy();
@@ -685,9 +606,8 @@ function clearLevel() {
     firstAids.removeAll(true);
     stars.removeAll(true);
 }
-*/
+
 function goToWelcome() {
     game.world.setBounds(0, 0, game.width, game.height);
     game.state.start('welcome');
 }
-
