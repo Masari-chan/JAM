@@ -29,12 +29,24 @@ var playState = {
 };
 
 //-----------------------------------
-var NUM_ENEMIES=8;//numero de enemigos que varia con la dificutal
+var NUM_ENEMIES=8;                  // Numero de enemigos que varia con la dificutal
+var NUM_BRANCHES = 5;               // Número de ramas. Varía con la dificultad.
+var NODES_PER_BRANCH = 5;           // Nodos en los que se puede divertir hacia otra rama.
+// var BRANCH_CHANCE = 0.3;         // Probabilidad de que un nodo sea una rama divergente. Esto debe variar con la dificultad. PARTE B
+var NUM_ENEMIES_POOL = 16;          // Enemies in the pool
+var NUM_SHOTS_POOL = 20;            // Bullets in the pool
+var CHANCE_TO_CREATE_ENEMY = 0.4;   // Probabilidad para crear un enemigo  
+var TIME_CREATE_ENEMIES = 1500;     // Cada cuánto se van a crear los enemigos (ms) 
+var TIME_MOVE_ENEMIES = 1500;       // Cada cuánto tiempo se van a mover los enemigos.
+var branches = [];                  // Ramas por las que nos vamos a desplazar
+var nodes = [];
+var enemyPool;
 var hudGroup, healthBar, healthValue, healthTween, hudTime;
 var remainingTime;
 var levelConfig;
 var platforms, ground;
 var enemies = [];
+var enemies_on_stage = [];
 var player, cursors;
 var toRight = false;
 var firstAids, stars;
@@ -45,15 +57,153 @@ var exit;
 var timerClock;
 var exitingLevel;
 
-function Enemy(spritesheet, tween, plat, right, limit) {
+/**
+ * Función que nos permite generar el nodo de una rama.
+ * @param {Number} id id del nodo de la rama
+ * @param {Number} posx posición x donde va a estar el nodo
+ * @param {Number} posy posición y donde va a estar el nodo
+ * @param {null | Number} idNextNode id del siguiente nodo. Puede ser null
+ * @param {BranchNode} siguiente nodo; 
+ * @param {Boolean} indica si está en uso por un enemigo o no.
+ * @param {Boolean} isBranch dice si diverge hacia otra rama o no
+ */
+function BranchNode(id, posx, posy, idNextNode, isBranch, isUsed){
+    this.id = id;
+    this.posx = posx;
+    this.posy = posy;
+    this.idNextNode = idNextNode;
+    //this.idNodeBranch = idNodeBranch;
+    this.isBranch = isBranch;
+    this.isUsed = isUsed;
+}
+
+function Enemy(spritesheet, tween, plat, right, limit, nHits, idNode) {
     this.sprite = spritesheet;
     this.flash = tween;
     this.platform = plat;
     this.faceright = right;
     this.stepLimit = limit;
     this.origX = spritesheet.x;
-    this.hitsToBeKilled = jumpsToKill;
+    this.hitsToBeKilled = nHits;
     this.isPatrolling = true;
+    this.idNode = idNode;
+}
+
+// Esta función crea los nodos por los que se van a mover los enemigos. 
+function createNodes(){
+    // Altura desde arriba del todo hasta el suelo.
+    var heightToBottom = game.world.height - 64;
+    // Ancho de cada sección que ocupa una rama.
+    var sectionWidth = game.world.width / NUM_BRANCHES;
+    var id, posx, posy, isBranch, idNextNode, isUsed;
+    // Si dividimos la altura del nivel en tantas partes como nodos por
+    // rama hay, tenemos las posiciones en el eje Y de cada nodo.
+    for (var i = 0; i < NUM_BRANCHES; i++){
+        for(var j = 0; j < NODES_PER_BRANCH; j++){
+            
+            id = i * NODES_PER_BRANCH + j;
+            // Dividimos el ancho entre tantas partes como ramas tengamos.
+            // Cada parte la dividimos, a su vez, en tantas partes
+            // como nodos haya en cada rama. De esa forma obtenemos las
+            // posiciones en X.
+            posx = i * sectionWidth + j * sectionWidth / NODES_PER_BRANCH;
+            posy = heightToBottom * j / NODES_PER_BRANCH;
+            //isBranch = Math.random() < BRANCH_CHANCE ? true : false;
+            // En caso de que este nodo se vaya a mover a otra rama tenemos que comprobar que:
+            // Si es la última rama no puede diverger hacia la derecha.
+            // Si es la primera rama no puede diverger hacia la izquierda.
+            // i >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH así nos aseguramos que vayamos a la derecha en la última rama
+            // id > NODES_PER_BRANCH así nos aseguramos de que vayamos a la derecha en la primera rama
+            /* PARTE B
+            if(isBranch){ 
+                idNodeBranch = Math.random() > 0.5 || i >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH 
+                ? id > NODES_PER_BRANCH ? id - NODES_PER_BRANCH + 1 : id + NODES_PER_BRANCH + 1 
+                : id + NODES_PER_BRANCH + 1;
+            }
+            */
+            idNextNode = j < NODES_PER_BRANCH ? id + 1 : null;
+            isUsed = false;
+            // var myNode = new BranchNode(id, posx, posy, idNextNode, idNodeBranch, isBranch, isUsed);
+            var myNode = new BranchNode(id, posx, posy, idNextNode, isBranch, isUsed);
+            nodes.push(myNode);
+        }
+    }
+    console.log("nodes", nodes);
+}
+
+/**
+ * Esta función mueve al enemigo
+ * 
+ */
+
+
+function moveEnemies(){
+    if(enemies_on_stage.length >= 1){
+        for(var i = 0; i < enemies_on_stage.length; i++){
+            moveToNode(enemies_on_stage[i], enemies_on_stage[i].idNode + 1);
+        }
+        /*enemies_on_stage.forEach(function(enemy){
+            //var enemyNode = nodes[enemy.idNode];
+            
+             PARTE B
+            if( enemyNode.isBranch ){
+                var nextNode = enemyNode.idNodeBranch;
+                // Comprobamos si el siguiente nodo está en uso y, si no lo está,
+                // nos desplazamos a él.
+                if(!nextNode.isUsed){
+                    var nextNode = nodes[enemy.idNode].idNodeBranch;
+                    moveToNode(enemy, nextNode);
+                }
+                else{ // El nodo está ocupado.
+                    // Nos movemos al siguiente nodo en la rama
+                    var next = enemy.idNode + 1;
+                    moveToNode(enemy, next);
+                }
+            }
+        });
+        */
+    }
+}
+
+// Esta función mueve los sprites al siguiente nodo y actualizan los valores de los nodos
+function moveToNode(enemy, node){
+    if(node % NODES_PER_BRANCH !== 0){
+        enemy.position.x = nodes[node].posx;
+        enemy.position.y = nodes[node].posy;
+        // El nodo deja de estar en uso puesto que nos hemos movido a otro
+        nodes[enemy.idNode].isUsed = false;
+        // Cambiamos la idNodo ya que nos estamos moviendo al siguiente
+        enemy.idNode = node;
+        // Activamos el nodo siguiente, ya que nos hemos movido a él.
+        nodes[node].isUsed = true;
+    }else{
+        healthValue-=20;
+        updateHealthBar();
+        resetMember(enemy);
+    }
+}
+
+/**
+ * Esta función coloca enemigos al inicio de la rama 
+ * @param {Object} enemy enemigo que colocar
+ */
+function placeEnemyAtBranch(enemy){
+    // Buscamos un número aleatorio que corresponderá con la rama en la que queramos meter al enemigo.
+    var branch = Math.floor(Math.random() * NUM_BRANCHES);
+    // Necesitamos saber la id del nodo en el que vamos a meter al personaje.
+    var idNodo = branch * NUM_BRANCHES;
+    // Metemos en caché el array de nodos para no tener que llamarlo en cada asignación
+    var myNode = nodes[idNodo];
+    enemy.reset(myNode.posx, myNode.posy);
+    // Si el nodo no está en uso, colocamos al enemigo ahí.
+    if( !myNode.isUsed ){
+        //enemy.sprite = game.add.sprite(myNode.posx, myNode.posy, 'enemy');
+        //enemy.body.sprite.body.x = myNode.posx + ENEMY_X_OFFSET;
+        //enemy.body.sprite.body.y = myNode.posy + ENEMY_Y_OFFSET;
+        enemy.idNode = idNodo;
+        myNode.isUsed = true;
+        
+    }
 }
 
 function loadPlayAssets() {
@@ -116,11 +266,14 @@ function createLevel() {
 
     // Create sounds
     createSounds();
-
+    // Create nodes
+    createNodes();
     // Create groups with a pool of objects
+    
     createAids();
     createStars();
     createShots();
+
     totalNumOfStars = 0;
 
     // Get level data from JSON
@@ -139,6 +292,7 @@ function createLevel() {
     // Now, set time and create the HUD
     remainingTime = secondsToGo;
     createHUD();
+
 
     // Create player. Initial position according to JSON data
     player = game.add.sprite(levelConfig.collectorStart.x, game.world.height - levelConfig.collectorStart.y,
@@ -162,6 +316,9 @@ function createLevel() {
     cursors = game.input.keyboard.createCursorKeys();
     keySpace = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
     // Update elapsed time each second
+    createEnemyPool(NUM_ENEMIES_POOL);
+    createBulletPool(NUM_SHOTS_POOL);
+    //game.time.events.loop(TIME_MOVE_ENEMIES, moveEnemies(), this);
     timerClock = game.time.events.loop(Phaser.Timer.SECOND, updateTime, this);
 }
 
@@ -173,6 +330,7 @@ function createSounds() {
     soundOutOfTime = game.add.audio('outoftime');
     soundLevelPassed = game.add.audio('levelpassed');
 }
+
 function createShots(){
     shots = game.add.group();
     shots.enableBody = true;
@@ -181,8 +339,51 @@ function createShots(){
     shots.callAll('anchor.setTo', 'anchor', 0.5, 1.0);
     shots.setAll('checkWorldBounds', true);
 };
+
 function shotKill(item){
     item.kill();
+}
+
+function createBulletPool(number_of_bullets) {
+    bulletPool = game.add.group();
+    bulletPool.enableBody = true;
+    bulletPool.createMultiple(number_of_bullets, 'shot');
+    bulletPool.callAll('events.onOutOfBounds.add','events.onOutOfBounds', resetMember);
+    bulletPool.callAll('anchor.setTo', 'anchor', 0.5, 1.0);
+    bulletPool.setAll('checkWorldBounds', true);
+    console.log("Enemy Pool", bulletPool);
+};
+
+function  createEnemyPool(number_of_enemies) {
+    enemyPool = game.add.group();
+    enemyPool.enableBody = true;
+    enemyPool.createMultiple(number_of_enemies, 'enemy');
+    enemyPool.forEach(setupPoolEnemy, this);
+    enemyPool.setAll('checkWorldBounds', true);
+    game.time.events.loop(TIME_CREATE_ENEMIES, createEnemy, this);
+    game.time.events.loop(TIME_MOVE_ENEMIES, moveEnemies, this);
+};
+
+function setupPoolEnemy(enemy){
+    enemy.anchor.x = 0.5;
+    enemy.anchor.y = 0.5;
+}
+
+function resetMember(item){
+    item.kill();
+}
+
+function createEnemy(){
+    if(Math.random() > CHANCE_TO_CREATE_ENEMY){
+        var enemy = enemyPool.getFirstExists(false);
+        console.log("Enemy", enemy);
+         if(enemy){
+            game.physics.arcade.enable(enemy);
+            placeEnemyAtBranch(enemy);
+            enemies_on_stage.push(enemy);
+        }
+    }
+    
 }
 
 function createAids() {
@@ -208,7 +409,7 @@ function createGround() {
     ground = platforms.create(0, game.world.height - 64, 'ground');
     ground.scale.setTo(2.75, 2); // 400x32 ---> 1100x64
     ground.body.immovable = true;
-
+    /*
     for (var i = 0, max = NUM_ENEMIES; i < max; i++)
         setupEnemy(levelConfig.ground.enemies[0], ground,(i*(game.world.width-100))/NUM_ENEMIES);
 
@@ -217,6 +418,7 @@ function createGround() {
 
     for (var i = 0, max = levelConfig.ground.stars.length; i < max; i++)
         setupStar(levelConfig.ground.stars[i], ground.y);
+    */
 }
 
 function createPlatforms() {
@@ -226,8 +428,8 @@ function createPlatforms() {
 function createPlatform(element) {
     var ledge = platforms.create(element.x, game.world.height - element.y, 'ground');
     ledge.body.immovable = true;
-
     //for (var i = 0, max = element.enemies.length; i < max; i++)
+    /*
     for (var i = 0, max = NUM_ENEMIES; i < max; i++)
         setupEnemy(element.enemies[0], ledge,(i*game.world.width)/NUM_ENEMIES);
 
@@ -236,12 +438,13 @@ function createPlatform(element) {
 
     for (var i = 0, max = element.stars.length; i < max; i++)
         setupStar(element.stars[i], ledge.y);
+    */
 }
 
 function setupEnemy(enemy, plat, posx) {
     var isRight;
     var limit;
-
+    
     var theEnemy = game.add.sprite(posx,  ENEMY_Y_OFFSET , 'enemy');
     theEnemy.anchor.setTo(0.5, 0.5);
     if (enemy.right === 0) {
