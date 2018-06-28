@@ -38,6 +38,9 @@ var NUM_SHOTS_POOL = 20;            // Bullets in the pool
 var CHANCE_TO_CREATE_ENEMY = 0.4;   // Probabilidad para crear un enemigo  
 var TIME_CREATE_ENEMIES = 1500;     // Cada cuánto se van a crear los enemigos (ms) 
 var TIME_MOVE_ENEMIES = 1500;       // Cada cuánto tiempo se van a mover los enemigos.
+var PLAYER_STEP;                    // El desplazamiento que hace el jugador cuando se mueve
+var BULLET_SPEED_FACTOR = 1;        // Cuanto más grande sea este valor, más lenta irá la bala
+var POINTS_PER_KILL = 10;           // Cuántos puntos da matar a un enemigo
 var branches = [];                  // Ramas por las que nos vamos a desplazar
 var nodes = [];
 var enemyPool;
@@ -178,8 +181,16 @@ function moveToNode(enemy, node){
         nodes[node].isUsed = true;
     }else{
         healthValue-=20;
+        if(healthValue <= 0){
+            endGame();
+        }
         updateHealthBar();
         resetMember(enemy);
+        var enemyIndex = enemies_on_stage.findIndex(function(e){
+            return e.alive === false;
+        });
+        enemies_on_stage.splice(enemyIndex, 1);
+        
     }
 }
 
@@ -295,7 +306,9 @@ function createLevel() {
 
 
     // Create player. Initial position according to JSON data
-    player = game.add.sprite(levelConfig.collectorStart.x, game.world.height - levelConfig.collectorStart.y,
+    // El jugador se va a pover del final de una rama al final de la siguiente.
+    PLAYER_STEP = game.world.width / NUM_BRANCHES;
+    player = game.add.sprite(PLAYER_STEP, game.world.height - levelConfig.collectorStart.y,
             'collector');
     player.anchor.setTo(0.5, 0.5);
     game.physics.arcade.enable(player);
@@ -513,6 +526,7 @@ function updateLevel() {
     // Check if player overlaps with any of the stars or first aids
     game.physics.arcade.overlap(player, stars, collectStar, null, this);
     game.physics.arcade.overlap(player, firstAids, getFirstAid, null, this);
+    game.physics.arcade.overlap(shots, enemies_on_stage, destroyEnemy, null, this);
 
     // Test collisions with enemies
     for (var i = enemies.length - 1; i >= 0; i--) {
@@ -543,20 +557,28 @@ function updateLevel() {
             updateHealthBar();
             console.log("bang");}
     }
+    
+    
 
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
 
     if (cursors.left._justUp) {
         //  Move to the left
-        player.body.x = player.body.x - ((game.world.width)/NUM_ENEMIES);
+        // player.body.x = player.body.x - ((game.world.width)/NUM_ENEMIES);
+        player.body.x = player.body.x > PLAYER_STEP
+                ? player.body.x - PLAYER_STEP
+                : player.body.x;
         //player.body.velocity.x = -PLAYER_VELOCITY;
         player.animations.play('left');
         toRight = false;
         cursors.left._justUp=false;
     } else if (cursors.right._justUp) {
         //  Move to the right
-        player.body.x = player.body.x + ((game.world.width)/NUM_ENEMIES);
+        //player.body.x = player.body.x + ((game.world.width)/NUM_ENEMIES);
+        player.body.x = player.body.x < game.world.width
+                ? player.body.x + PLAYER_STEP
+                : player.body.x;
         //player.body.velocity.x = PLAYER_VELOCITY;
         player.animations.play('right');
         toRight = true;
@@ -577,6 +599,22 @@ function updateLevel() {
     manageShots();
 }
 
+function destroyEnemy(shot, enemy){
+    shot.kill();
+    enemy.kill();
+    
+    var enemyIndex = enemies_on_stage.findIndex(function(e){
+        return e.alive === false;
+    });
+    enemies_on_stage.splice(enemyIndex, 1);
+    /*
+     * Aquí hay que meter el blast al destruir al enemigo y el sonido.
+     */
+    score=score + POINTS_PER_KILL;
+    scoreText.setText("Score: "+score);
+    
+}
+
 function manageShots(){
     if (keySpace.justDown)fireShot(); 
 }
@@ -584,8 +622,12 @@ function manageShots(){
 function fireShot(){
     var x = player.x;
     var y = player.y - 10;
-    var vy = -300;
-    var vx = -100;
+    // El ángulo de disparo debe variar en funcion del número de ramas de que disponemos
+    // Ya que a mayor número de ramas, mayor ángulo de disparo.
+    var vy = - player.y / BULLET_SPEED_FACTOR;
+    var vx = - PLAYER_STEP / BULLET_SPEED_FACTOR;
+    // var vy = -300;
+    // var vx = -100;
     shoot(x,y,vy,vx);
 }
 
