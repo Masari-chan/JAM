@@ -226,7 +226,7 @@ function loadPlayAssets() {
 
 function loadSprites() {
     game.load.spritesheet('collector', 'assets/imgs/dude.png', 32, 48);
-    game.load.spritesheet('enemy', 'assets/imgs/enemySprite.png', 55, 53, 15);
+    game.load.spritesheet('enemy', 'assets/imgs/abeja.png', 100, 98, 2);
 }
 
 function loadImages() {
@@ -460,6 +460,8 @@ function setupEnemy(enemy, plat, posx) {
     
     var theEnemy = game.add.sprite(posx,  ENEMY_Y_OFFSET , 'enemy');
     theEnemy.anchor.setTo(0.5, 0.5);
+    //theEnemy.scale.x=0.005;
+    //theEnemy.scale.y=0.005;
     if (enemy.right === 0) {
         theEnemy.scale.x = -1;
         isRight = false;
@@ -479,8 +481,8 @@ function setupEnemy(enemy, plat, posx) {
     theEnemy.body.collideWorldBounds = true;
     theEnemy.body.setSize(41, 43, 3, 10);
 
-    theEnemy.animations.add('swing', [0, 1, 2, 3, 4, 5, 6, 7], 10, true);
-    theEnemy.animations.add('run', [8, 9, 10, 11, 12, 13, 14], 10, true);
+    theEnemy.animations.add('swing', [0, 1], 10, true);
+    //theEnemy.animations.add('run', [8, 9, 10, 11, 12, 13, 14], 10, true);
 
     var newEnemy = new Enemy(theEnemy, flash, plat, isRight, limit);
     enemies.push(newEnemy);
