@@ -233,12 +233,12 @@ function loadImages() {
     game.load.image('bgGame', 'assets/imgs/bgPlay.jpg');
     game.load.image('exit', 'assets/imgs/exit.png');
     game.load.image('ground', 'assets/imgs/platform.png');
-    game.load.image('star', 'assets/imgs/star.png');
+    game.load.image('star', 'assets/imgs/miel_grande');
     game.load.image('aid', 'assets/imgs/firstaid.png');
     game.load.image('healthHolder', 'assets/imgs/health_holder.png');
     game.load.image('healthBar', 'assets/imgs/health_bar.png');
     game.load.image('heart', 'assets/imgs/heart.png');
-    game.load.image('shot', 'assets/imgs/shot.jpg');
+    game.load.image('shot', 'assets/imgs/tarro_miel.png');
 
 }
 
