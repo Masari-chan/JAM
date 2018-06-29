@@ -225,7 +225,7 @@ function loadPlayAssets() {
 }
 
 function loadSprites() {
-    game.load.spritesheet('collector', 'assets/imgs/dude.png', 32, 48);
+    game.load.spritesheet('collector', 'assets/imgs/female.png', 80, 110, 24);
     game.load.spritesheet('enemy', 'assets/imgs/abeja.png', 100, 98, 2);
 }
 
