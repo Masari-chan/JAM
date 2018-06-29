@@ -4,6 +4,7 @@
  * and open the template in the editor.
  */
 
+
 var MAX_HEALTH = 100;
 var MAX_STARS = 40;
 var MAX_AIDS = 30;
@@ -22,7 +23,7 @@ var shots;
 var keySpace;
 var levelsData = ['assets/levels/level01.json', 'assets/levels/level02.json'];
 
-var playState = {
+var playStateA = {
     preload: loadPlayAssets,
     create: createLevel,
     update: updateLevel
@@ -111,17 +112,18 @@ function createNodes(){
             // posiciones en X.
             posx = i * sectionWidth + j * sectionWidth / NODES_PER_BRANCH;
             posy = heightToBottom * j / NODES_PER_BRANCH;
-            //isBranch = Math.random() < BRANCH_CHANCE ? true : false;
+            isBranch =j<NODES_PER_BRANCH-1 ? Math.random() < BRANCH_CHANCE ? true : false : false;
             // En caso de que este nodo se vaya a mover a otra rama tenemos que comprobar que:
             // Si es la última rama no puede diverger hacia la derecha.
             // Si es la primera rama no puede diverger hacia la izquierda.
             // i >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH así nos aseguramos que vayamos a la derecha en la última rama
             // id > NODES_PER_BRANCH así nos aseguramos de que vayamos a la derecha en la primera rama
-            /* PARTE B
+            /*
+            PARTE B
             if(isBranch){ 
-                idNodeBranch = Math.random() > 0.5 || i >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH 
-                ? id > NODES_PER_BRANCH ? id - NODES_PER_BRANCH + 1 : id + NODES_PER_BRANCH + 1 
-                : id + NODES_PER_BRANCH + 1;
+            idNodeBranch = Math.random() > 0.5 || id >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH 
+            ? id > NODES_PER_BRANCH ? id - NODES_PER_BRANCH + 1 : id + NODES_PER_BRANCH + 1 
+            : id + NODES_PER_BRANCH + 1;
             }
             */
             idNextNode = j < NODES_PER_BRANCH ? id + 1 : null;
@@ -133,7 +135,6 @@ function createNodes(){
     }
     console.log("nodes", nodes);
 }
-
 /**
  * Esta función mueve al enemigo
  * 

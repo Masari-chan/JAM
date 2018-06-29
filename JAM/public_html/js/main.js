@@ -33,7 +33,10 @@ function startGame() {
     // Config Screen
     game.state.add('config', configState);
     // Play Screen
-    game.state.add('play', playState);
+    
+    game.state.add('A', playStateA);
+    game.state.add('B', playStateB);
+
 
     game.state.start('welcome');
 }
