@@ -32,7 +32,7 @@ var playStateB = {
 var NUM_ENEMIES=8;                  // Numero de enemigos que varia con la dificutal
 var NUM_BRANCHES = 5;               // Número de ramas. Varía con la dificultad.
 var NODES_PER_BRANCH = 5;           // Nodos en los que se puede divertir hacia otra rama.
-// var BRANCH_CHANCE = 0.3;         // Probabilidad de que un nodo sea una rama divergente. Esto debe variar con la dificultad. PARTE B
+var BRANCH_CHANCE = 0.3;         // Probabilidad de que un nodo sea una rama divergente. Esto debe variar con la dificultad. PARTE B
 var NUM_ENEMIES_POOL = 16;          // Enemies in the pool
 var NUM_SHOTS_POOL = 20;            // Bullets in the pool
 var CHANCE_TO_CREATE_ENEMY = 0.4;   // Probabilidad para crear un enemigo  
@@ -70,12 +70,12 @@ var exitingLevel;
  * @param {Boolean} indica si está en uso por un enemigo o no.
  * @param {Boolean} isBranch dice si diverge hacia otra rama o no
  */
-function BranchNode(id, posx, posy, idNextNode, isBranch, isUsed){
+function BranchNode(id, posx, posy, idNextNode, idNodeBranch, isBranch, isUsed){
     this.id = id;
     this.posx = posx;
     this.posy = posy;
     this.idNextNode = idNextNode;
-    //this.idNodeBranch = idNodeBranch;
+    this.idNodeBranch = idNodeBranch;
     this.isBranch = isBranch;
     this.isUsed = isUsed;
 }
@@ -117,18 +117,18 @@ function createNodes(){
             // Si es la primera rama no puede diverger hacia la izquierda.
             // i >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH así nos aseguramos que vayamos a la derecha en la última rama
             // id > NODES_PER_BRANCH así nos aseguramos de que vayamos a la derecha en la primera rama
-            /*
-            PARTE B
+            
+            //PARTE B
             if(isBranch){ 
             idNodeBranch = Math.random() > 0.5 || id >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH 
             ? id > NODES_PER_BRANCH ? id - NODES_PER_BRANCH + 1 : id + NODES_PER_BRANCH + 1 
             : id + NODES_PER_BRANCH + 1;
             }
-            */
+            
             idNextNode = j < NODES_PER_BRANCH ? id + 1 : null;
             isUsed = false;
-            // var myNode = new BranchNode(id, posx, posy, idNextNode, idNodeBranch, isBranch, isUsed);
-            var myNode = new BranchNode(id, posx, posy, idNextNode, isBranch, isUsed);
+            var myNode = new BranchNode(id, posx, posy, idNextNode, idNodeBranch, isBranch, isUsed);
+            //var myNode = new BranchNode(id, posx, posy, idNextNode, isBranch, isUsed);
             nodes.push(myNode);
         }
     }
@@ -144,11 +144,8 @@ function moveEnemies(){
     if(enemies_on_stage.length >= 1){
         for(var i = 0; i < enemies_on_stage.length; i++){
             moveToNode(enemies_on_stage[i], enemies_on_stage[i].idNode + 1);
-        }
-        /*enemies_on_stage.forEach(function(enemy){
-            //var enemyNode = nodes[enemy.idNode];
             
-             PARTE B
+            // PARTE B
             if( enemyNode.isBranch ){
                 var nextNode = enemyNode.idNodeBranch;
                 // Comprobamos si el siguiente nodo está en uso y, si no lo está,
@@ -163,6 +160,11 @@ function moveEnemies(){
                     moveToNode(enemy, next);
                 }
             }
+        }
+        /*enemies_on_stage.forEach(function(enemy){
+            //var enemyNode = nodes[enemy.idNode];
+            
+            
         });
         */
     }
@@ -208,9 +210,9 @@ function placeEnemyAtBranch(enemy){
     enemy.reset(myNode.posx, myNode.posy);
     // Si el nodo no está en uso, colocamos al enemigo ahí.
     if( !myNode.isUsed ){
-        //enemy.sprite = game.add.sprite(myNode.posx, myNode.posy, 'enemy');
-        //enemy.body.sprite.body.x = myNode.posx + ENEMY_X_OFFSET;
-        //enemy.body.sprite.body.y = myNode.posy + ENEMY_Y_OFFSET;
+        enemy.sprite = game.add.sprite(myNode.posx, myNode.posy, 'enemy');
+        enemy.body.sprite.body.x = myNode.posx + ENEMY_X_OFFSET;
+        enemy.body.sprite.body.y = myNode.posy + ENEMY_Y_OFFSET;
         enemy.idNode = idNodo;
         myNode.isUsed = true;
         

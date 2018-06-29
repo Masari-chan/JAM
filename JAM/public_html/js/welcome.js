@@ -121,5 +121,5 @@ function onConfigButtonPressed() {
 }
 
 function onPlayButtonPressed() {
-    game.state.start('play');
+    game.state.start('B');
 }
