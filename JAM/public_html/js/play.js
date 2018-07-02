@@ -29,8 +29,8 @@ var playState = {
 };
 
 //-----------------------------------
-var NUM_ENEMIES=8;                  // Numero de enemigos que varia con la dificutal
-var NUM_BRANCHES = 5;               // Número de ramas. Varía con la dificultad.
+var NUM_ENEMIES = 8;                  // Numero de enemigos que varia con la dificutal
+var NUM_BRANCHES = 7;               // Número de ramas. Varía con la dificultad.
 var NODES_PER_BRANCH = 5;           // Nodos en los que se puede divertir hacia otra rama.
 // var BRANCH_CHANCE = 0.3;         // Probabilidad de que un nodo sea una rama divergente. Esto debe variar con la dificultad. PARTE B
 var NUM_ENEMIES_POOL = 16;          // Enemies in the pool
@@ -38,10 +38,13 @@ var NUM_SHOTS_POOL = 20;            // Bullets in the pool
 var CHANCE_TO_CREATE_ENEMY = 0.4;   // Probabilidad para crear un enemigo  
 var TIME_CREATE_ENEMIES = 1500;     // Cada cuánto se van a crear los enemigos (ms) 
 var TIME_MOVE_ENEMIES = 1500;       // Cada cuánto tiempo se van a mover los enemigos.
-var PLAYER_STEP;                    // El desplazamiento que hace el jugador cuando se mueve
+var SECTION_WIDTH;                  // El desplazamiento que hace el jugador cuando se mueve
 var BULLET_SPEED_FACTOR = 1;        // Cuanto más grande sea este valor, más lenta irá la bala
 var POINTS_PER_KILL = 10;           // Cuántos puntos da matar a un enemigo
 var branches = [];                  // Ramas por las que nos vamos a desplazar
+var BRANCH_COLOR = 0xd3ae2a;        // Color de la rama
+var BRANCH_LINE_WIDTH = 5;          // Grosor de la línea de la rama
+var XOFFSET = 15;
 var nodes = [];
 var enemyPool;
 var hudGroup, healthBar, healthValue, healthTween, hudTime;
@@ -111,7 +114,7 @@ function createNodes(){
             // posiciones en X.
             posx = i * sectionWidth + j * sectionWidth / NODES_PER_BRANCH;
             posy = heightToBottom * j / NODES_PER_BRANCH;
-            //isBranch = Math.random() < BRANCH_CHANCE ? true : false;
+            // isBranch = Math.random() < BRANCH_CHANCE ? true : false;
             // En caso de que este nodo se vaya a mover a otra rama tenemos que comprobar que:
             // Si es la última rama no puede diverger hacia la derecha.
             // Si es la primera rama no puede diverger hacia la izquierda.
@@ -202,7 +205,7 @@ function placeEnemyAtBranch(enemy){
     // Buscamos un número aleatorio que corresponderá con la rama en la que queramos meter al enemigo.
     var branch = Math.floor(Math.random() * NUM_BRANCHES);
     // Necesitamos saber la id del nodo en el que vamos a meter al personaje.
-    var idNodo = branch * NUM_BRANCHES;
+    var idNodo = branch * NODES_PER_BRANCH;
     // Metemos en caché el array de nodos para no tener que llamarlo en cada asignación
     var myNode = nodes[idNodo];
     enemy.reset(myNode.posx, myNode.posy);
@@ -214,6 +217,24 @@ function placeEnemyAtBranch(enemy){
         enemy.idNode = idNodo;
         myNode.isUsed = true;
         
+    }
+}
+
+/**
+ * Esta función va a dibujar las líneas de las ramas por las que van a bajar las abejas.
+ * Definimos los graphics, que nos van a permitir dibujar lo que queramos.
+ * Definimos el ancho de línea y el color de la misma.
+ * MoveTo y LineTo es un sistema que mueve el punto desde el que se va a empezar
+ * a dibujar y hasta dónde se va a dibujar.
+ * endFill sirve para que no se dibuje una línea al pasar de abajo del todo arriba.
+ */
+function drawBranches(){
+    var graphics = game.add.graphics(0,0);
+    graphics.lineStyle(BRANCH_LINE_WIDTH, BRANCH_COLOR, 1);
+    for(var i = 0; i < NUM_BRANCHES; i++){
+        graphics.moveTo(i * SECTION_WIDTH + XOFFSET, 64);//moving position of graphic if you draw mulitple lines
+        graphics.lineTo((i+1)*SECTION_WIDTH - 1, game.world.height - 64);
+        graphics.endFill();
     }
 }
 
@@ -265,19 +286,25 @@ function createLevel() {
 
     // Background
     var bg = game.add.tileSprite(0, 0, game.world.width, game.world.height, 'bgGame');
+    
     // Smooth scrolling of the background in both X and Y axis
     bg.scrollFactorX = 0.7;
     bg.scrollFactorY = 0.7;
+    
+    
 
     // Collide with this image to exit level
+    /*
     exit = game.add.sprite(game.world.width - 100, game.world.height - 64, 'exit');
     game.physics.arcade.enable(exit);
     exit.anchor.setTo(0, 1);
     exit.body.setSize(88, 58, 20, 33);
+    */
 
     // Create sounds
     createSounds();
     // Create nodes
+
     createNodes();
     // Create groups with a pool of objects
     
@@ -299,24 +326,29 @@ function createLevel() {
     createGround();
 
     createPlatforms();
+    
 
     // Now, set time and create the HUD
     remainingTime = secondsToGo;
     createHUD();
-
-
+    
     // Create player. Initial position according to JSON data
     // El jugador se va a pover del final de una rama al final de la siguiente.
-    PLAYER_STEP = game.world.width / NUM_BRANCHES;
-    player = game.add.sprite(PLAYER_STEP, game.world.height - levelConfig.collectorStart.y,
+    SECTION_WIDTH = game.world.width / NUM_BRANCHES;
+    // Ramas por donde van a bajar los enemigos.
+    drawBranches();
+    player = game.add.sprite(SECTION_WIDTH, game.world.height - levelConfig.collectorStart.y,
             'collector');
     player.anchor.setTo(0.5, 0.5);
     game.physics.arcade.enable(player);
+    
+     
 
     //  Player physics properties. Give the little guy a slight bounce.
     player.body.bounce.y = 0.2;
     player.body.gravity.y = BODY_GRAVITY;
     player.body.collideWorldBounds = true;
+    
 
     // Camera follows the player inside the world
     game.camera.follow(player);
@@ -331,6 +363,7 @@ function createLevel() {
     // Update elapsed time each second
     createEnemyPool(NUM_ENEMIES_POOL);
     createBulletPool(NUM_SHOTS_POOL);
+    
     //game.time.events.loop(TIME_MOVE_ENEMIES, moveEnemies(), this);
     timerClock = game.time.events.loop(Phaser.Timer.SECOND, updateTime, this);
 }
@@ -502,6 +535,7 @@ function setupStar(star, floorY) {
 
 function createHUD() {
     //puntuacion--score--no funciona-----------------------------------------------------------------------------------------------
+    
     scoreText = game.add.text(650, 5, 'Score: ' + score,{fontSize: '25px', fill: '#000'});
     hudGroup = game.add.group();
     hudGroup.create(5, 5, 'heart');
@@ -566,8 +600,8 @@ function updateLevel() {
     if (cursors.left._justUp) {
         //  Move to the left
         // player.body.x = player.body.x - ((game.world.width)/NUM_ENEMIES);
-        player.body.x = player.body.x > PLAYER_STEP
-                ? player.body.x - PLAYER_STEP
+        player.body.x = player.body.x > SECTION_WIDTH
+                ? player.body.x - SECTION_WIDTH
                 : player.body.x;
         //player.body.velocity.x = -PLAYER_VELOCITY;
         player.animations.play('left');
@@ -577,7 +611,7 @@ function updateLevel() {
         //  Move to the right
         //player.body.x = player.body.x + ((game.world.width)/NUM_ENEMIES);
         player.body.x = player.body.x < game.world.width
-                ? player.body.x + PLAYER_STEP
+                ? player.body.x + SECTION_WIDTH
                 : player.body.x;
         //player.body.velocity.x = PLAYER_VELOCITY;
         player.animations.play('right');
@@ -625,7 +659,7 @@ function fireShot(){
     // El ángulo de disparo debe variar en funcion del número de ramas de que disponemos
     // Ya que a mayor número de ramas, mayor ángulo de disparo.
     var vy = - player.y / BULLET_SPEED_FACTOR;
-    var vx = - PLAYER_STEP / BULLET_SPEED_FACTOR;
+    var vx = - SECTION_WIDTH / BULLET_SPEED_FACTOR;
     // var vy = -300;
     // var vx = -100;
     shoot(x,y,vy,vx);
