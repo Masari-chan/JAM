@@ -22,7 +22,7 @@ var shots;
 var keySpace;
 var levelsData = ['assets/levels/level01.json', 'assets/levels/level02.json'];
 
-var playState = {
+var playStateA = {
     preload: loadPlayAssets,
     create: createLevel,
     update: updateLevel
@@ -30,7 +30,7 @@ var playState = {
 
 //-----------------------------------
 var NUM_ENEMIES = 8;                  // Numero de enemigos que varia con la dificutal
-var NUM_BRANCHES = 7;               // Número de ramas. Varía con la dificultad.
+var NUM_BRANCHES = 5;               // Número de ramas. Varía con la dificultad.
 var NODES_PER_BRANCH = 5;           // Nodos en los que se puede divertir hacia otra rama.
 // var BRANCH_CHANCE = 0.3;         // Probabilidad de que un nodo sea una rama divergente. Esto debe variar con la dificultad. PARTE B
 var NUM_ENEMIES_POOL = 16;          // Enemies in the pool
@@ -216,7 +216,6 @@ function placeEnemyAtBranch(enemy){
         //enemy.body.sprite.body.y = myNode.posy + ENEMY_Y_OFFSET;
         enemy.idNode = idNodo;
         myNode.isUsed = true;
-        
     }
 }
 
@@ -246,8 +245,8 @@ function loadPlayAssets() {
 }
 
 function loadSprites() {
-    game.load.spritesheet('collector', 'assets/imgs/dude.png', 32, 48);
-    game.load.spritesheet('enemy', 'assets/imgs/enemySprite.png', 55, 53, 15);
+    game.load.spritesheet('collector', 'assets/imgs/female.png', 80, 110, 24);
+    game.load.spritesheet('enemy', 'assets/imgs/abeja.png', 100, 98, 2);
 }
 
 function loadImages() {
