@@ -35,6 +35,7 @@ var NODES_PER_BRANCH = 5;           // Nodos en los que se puede divertir hacia 
 // var BRANCH_CHANCE = 0.3;         // Probabilidad de que un nodo sea una rama divergente. Esto debe variar con la dificultad. PARTE B
 var NUM_ENEMIES_POOL = 16;          // Enemies in the pool
 var NUM_SHOTS_POOL = 20;            // Bullets in the pool
+var NUM_LIFEITEM_POOL = 16;         // Life items in the pool
 var CHANCE_TO_CREATE_ENEMY = 0.4;   // Probabilidad para crear un enemigo  
 var TIME_CREATE_ENEMIES = 1500;     // Cada cuánto se van a crear los enemigos (ms) 
 var TIME_MOVE_ENEMIES = 1500;       // Cada cuánto tiempo se van a mover los enemigos.
@@ -44,9 +45,12 @@ var POINTS_PER_KILL = 10;           // Cuántos puntos da matar a un enemigo
 var branches = [];                  // Ramas por las que nos vamos a desplazar
 var BRANCH_COLOR = 0xd3ae2a;        // Color de la rama
 var BRANCH_LINE_WIDTH = 5;          // Grosor de la línea de la rama
+var LIFE_CHANCE = 0.7;              // Probabilidad de que un enemigo suelte vida al matarlo.
 var XOFFSET = 15;
 var nodes = [];
+var lives_on_stage = [];
 var enemyPool;
+var lifeItemPool;
 var hudGroup, healthBar, healthValue, healthTween, hudTime;
 var remainingTime;
 var levelConfig;
@@ -92,6 +96,11 @@ function Enemy(spritesheet, tween, plat, right, limit, nHits, idNode) {
     this.origX = spritesheet.x;
     this.hitsToBeKilled = nHits;
     this.isPatrolling = true;
+    this.idNode = idNode;
+}
+
+function LifeItem(sprite, idNode){
+    this.sprite = sprite;
     this.idNode = idNode;
 }
 
@@ -171,6 +180,14 @@ function moveEnemies(){
     }
 }
 
+function moveLife(){
+    if(lives_on_stage.length >= 1){
+        for(var i = 1; i < lives_on_stage.length; i++){
+            moveLifeToNode(lives_on_stage[i], lives_on_stage[i].idNode + 1);
+        }
+    }
+}
+
 // Esta función mueve los sprites al siguiente nodo y actualizan los valores de los nodos
 function moveToNode(enemy, node){
     if(node % NODES_PER_BRANCH !== 0){
@@ -215,8 +232,14 @@ function placeEnemyAtBranch(enemy){
         //enemy.body.sprite.body.x = myNode.posx + ENEMY_X_OFFSET;
         //enemy.body.sprite.body.y = myNode.posy + ENEMY_Y_OFFSET;
         enemy.idNode = idNodo;
+        enemy.isLife = false;
         myNode.isUsed = true;
     }
+}
+
+function placeLifeItemAtNode(item, node){
+    item.reset(node.posx, node.posy);
+    item.idNode = node;
 }
 
 /**
@@ -259,6 +282,7 @@ function loadImages() {
     game.load.image('healthBar', 'assets/imgs/health_bar.png');
     game.load.image('heart', 'assets/imgs/heart.png');
     game.load.image('shot', 'assets/imgs/shot.jpg');
+    game.load.image('mielgrande', 'assets/imgs/miel_grande.png');
 
 }
 
@@ -278,7 +302,7 @@ function loadLevel(level) {
 
 function createLevel() {
     
-  
+    console.log("Estoy en el A");
     exitingLevel = false;
     // Set World bounds (same size as the image background in this case)
     game.world.setBounds(0, 0, 800, 600);
@@ -333,7 +357,7 @@ function createLevel() {
     
     // Create player. Initial position according to JSON data
     // El jugador se va a pover del final de una rama al final de la siguiente.
-    SECTION_WIDTH = game.world.width / NUM_BRANCHES;
+    SECTION_WIDTH = ( game.world.width - PLAYER_COLLIDE_OFFSET_X ) / NUM_BRANCHES;
     // Ramas por donde van a bajar los enemigos.
     drawBranches();
     player = game.add.sprite(SECTION_WIDTH, game.world.height - levelConfig.collectorStart.y,
@@ -347,7 +371,6 @@ function createLevel() {
     player.body.bounce.y = 0.2;
     player.body.gravity.y = BODY_GRAVITY;
     player.body.collideWorldBounds = true;
-    
 
     // Camera follows the player inside the world
     game.camera.follow(player);
@@ -360,6 +383,7 @@ function createLevel() {
     cursors = game.input.keyboard.createCursorKeys();
     keySpace = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
     // Update elapsed time each second
+    createLifeItemPool(NUM_LIFEITEM_POOL);
     createEnemyPool(NUM_ENEMIES_POOL);
     createBulletPool(NUM_SHOTS_POOL);
     
@@ -403,13 +427,22 @@ function  createEnemyPool(number_of_enemies) {
     enemyPool = game.add.group();
     enemyPool.enableBody = true;
     enemyPool.createMultiple(number_of_enemies, 'enemy');
-    enemyPool.forEach(setupPoolEnemy, this);
+    enemyPool.forEach(setupPool, this);
     enemyPool.setAll('checkWorldBounds', true);
     game.time.events.loop(TIME_CREATE_ENEMIES, createEnemy, this);
     game.time.events.loop(TIME_MOVE_ENEMIES, moveEnemies, this);
 };
 
-function setupPoolEnemy(enemy){
+function createLifeItemPool(number_of_lives){
+    lifeItemPool = game.add.group();
+    lifeItemPool.enableBody = true;
+    lifeItemPool.createMultiple(number_of_lives, 'mielgrande');
+    lifeItemPool.forEach(setupPool, this);
+    lifeItemPool.setAll('checkWorldBounds', true);
+    game.time.events.loop(TIME_MOVE_ENEMIES, moveLife, this);
+}
+
+function setupPool(enemy){
     enemy.anchor.x = 0.5;
     enemy.anchor.y = 0.5;
 }
@@ -421,7 +454,6 @@ function resetMember(item){
 function createEnemy(){
     if(Math.random() > CHANCE_TO_CREATE_ENEMY){
         var enemy = enemyPool.getFirstExists(false);
-        console.log("Enemy", enemy);
          if(enemy){
             game.physics.arcade.enable(enemy);
             placeEnemyAtBranch(enemy);
@@ -454,16 +486,6 @@ function createGround() {
     ground = platforms.create(0, game.world.height - 64, 'ground');
     ground.scale.setTo(2.75, 2); // 400x32 ---> 1100x64
     ground.body.immovable = true;
-    /*
-    for (var i = 0, max = NUM_ENEMIES; i < max; i++)
-        setupEnemy(levelConfig.ground.enemies[0], ground,(i*(game.world.width-100))/NUM_ENEMIES);
-
-    for (var i = 0, max = levelConfig.ground.aids.length; i < max; i++)
-        setupAid(levelConfig.ground.aids[i], ground.y);
-
-    for (var i = 0, max = levelConfig.ground.stars.length; i < max; i++)
-        setupStar(levelConfig.ground.stars[i], ground.y);
-    */
 }
 
 function createPlatforms() {
@@ -473,17 +495,6 @@ function createPlatforms() {
 function createPlatform(element) {
     var ledge = platforms.create(element.x, game.world.height - element.y, 'ground');
     ledge.body.immovable = true;
-    //for (var i = 0, max = element.enemies.length; i < max; i++)
-    /*
-    for (var i = 0, max = NUM_ENEMIES; i < max; i++)
-        setupEnemy(element.enemies[0], ledge,(i*game.world.width)/NUM_ENEMIES);
-
-    for (var i = 0, max = element.aids.length; i < max; i++)
-        setupAid(element.aids[i], ledge.y);
-
-    for (var i = 0, max = element.stars.length; i < max; i++)
-        setupStar(element.stars[i], ledge.y);
-    */
 }
 
 function setupEnemy(enemy, plat, posx) {
@@ -561,38 +572,6 @@ function updateLevel() {
     game.physics.arcade.overlap(player, firstAids, getFirstAid, null, this);
     game.physics.arcade.overlap(shots, enemies_on_stage, destroyEnemy, null, this);
 
-    // Test collisions with enemies
-    for (var i = enemies.length - 1; i >= 0; i--) {
-        /*if (enemies[i].platform === playerPlatform) {
-            dist = Phaser.Math.distance(enemies[i].sprite.body.x, enemies[i].sprite.body.y,
-                    player.body.x, player.body.y);
-            if (Math.round(dist) <= ENEMY_DISTANCE_ATTACK)
-                enemies[i].isPatrolling = false;
-            else
-                enemies[i].isPatrolling = true;
-        } else
-            enemies[i].isPatrolling = true;
-
-        if (enemies[i].isPatrolling)
-            patrol(enemies[i]);
-        else
-            attack(enemies[i], player);
-*/      enemies[i].sprite.body.x+=0.25;
-        enemies[i].sprite.body.y+=1;
-       
-        
-        if (game.physics.arcade.collide(player, enemies[i].sprite))
-            playerVsEnemy(player, enemies[i].sprite, enemies[i], i);
-        if (game.physics.arcade.collide(enemies[i].sprite,ground)){
-            enemies[i].sprite.destroy();
-            enemies.splice(i,1);
-            healthValue-=20;
-            updateHealthBar();
-            console.log("bang");}
-    }
-    
-    
-
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
 
@@ -620,11 +599,6 @@ function updateLevel() {
         //  Stand still
         stopPlayer();
     }
-    // Allow the player to jump if touching the ground.
-    /*if (cursors.up.isDown && player.body.touching.down && hitPlatform) {
-        player.body.velocity.y = -PLAYER_VELOCITY * 2;
-        playerPlatform = undefined;
-    }*/
 
     // Check if player exits level and the game is over
     if (!exitingLevel)
@@ -634,15 +608,24 @@ function updateLevel() {
 
 function destroyEnemy(shot, enemy){
     shot.kill();
-    enemy.kill();
-    
     var enemyIndex = enemies_on_stage.findIndex(function(e){
         return e.alive === false;
     });
+    if ( Math.random() < LIFE_CHANCE ){
+        var lifeItem = lifeItemPool.getFirstExists(false);
+        if(lifeItem){
+            game.physics.arcade.enable(lifeItem);
+            lives_on_stage.push(lifeItem);
+            placeLifeItemAtNode(lifeItem, enemy.idNode);
+        }
+        enemy.body.sprite.loadTexture('mielgrande', 0, false);
+    }
+    enemy.kill();
     enemies_on_stage.splice(enemyIndex, 1);
     /*
      * Aquí hay que meter el blast al destruir al enemigo y el sonido.
      */
+
     score=score + POINTS_PER_KILL;
     scoreText.setText("Score: "+score);
     
