@@ -30,7 +30,7 @@ var playStateB = {
 
 //-----------------------------------
 var NUM_ENEMIES = 8;                    // Numero de enemigos que varia con la dificutal
-NUM_BRANCHES = branchesTotal;                   // Número de ramas. Varía con la dificultad.
+var NUM_BRANCHES = 8;                   // Número de ramas. Varía con la dificultad.
 var NODES_PER_BRANCH = 5;               // Nodos en los que se puede divertir hacia otra rama.
 var BRANCH_CHANCE = 0.3;             // Probabilidad de que un nodo sea una rama divergente. Esto debe variar con la dificultad. PARTE B
 var NUM_ENEMIES_POOL = 16;              // Enemies in the pool
@@ -68,15 +68,16 @@ var exit;
 var timerClock;
 var exitingLevel;
 
-/*
- * var linkedNodes = {
- *      '3': // Aquí defines un array de nodos que van a diverger en función del número de ramas.
- *      '4': //---
- *      ....
- *      '8': 
- * }
- * 
- */
+// Mapa de nodos conectados
+// Para que funcione los nodos deben estar ordenados por nodo de inicio.
+var linkedNodes = {
+    3: [[1, 7], [12, 8]],
+    4: [[1, 7], [11, 17], [12, 8]],
+    5: [[1, 7], [11, 17], [12, 8], [17, 13], [23, 19]],
+    6: [[1, 7], [11, 17], [12, 8], [17, 13], [21, 27], [23, 19]],
+    7: [[1, 7], [11, 17], [12, 8], [17, 13], [21, 27], [23, 19], [32, 28]],
+    8: [[1, 7], [11, 17], [12, 8], [17, 13], [21, 27], [23, 19], [32, 28], [36, 32]]
+};
 
 /*
  * Función que nos permite generar el nodo de una rama.
@@ -122,8 +123,11 @@ function createNodes(){
     // Altura desde arriba del todo hasta el suelo.
     var heightToBottom = game.world.height - 64;
     // Ancho de cada sección que ocupa una rama.
-    var sectionWidth = (game.world.width - PLAYER_COLLIDE_OFFSET_X) / NUM_BRANCHES;
-    var id, posx, posy, isBranch, idNextNode, isUsed,idNodeBranch;
+    var sectionWidth = ( game.world.width - PLAYER_COLLIDE_OFFSET_X ) / NUM_BRANCHES;
+    var id, posx, posy, isBranch, idNextNode, idNodeBranch, isUsed;
+    // Con este índice vamos a comprobar en qué posición del array de linkedNodes nos encontramos.
+    // De esa forma nos ahorramos el tener que recorrer todo el array para cada nodo.
+    var index_check_if_branch = 0;
     // Si dividimos la altura del nivel en tantas partes como nodos por
     // rama hay, tenemos las posiciones en el eje Y de cada nodo.
     for (var i = 0; i < NUM_BRANCHES; i++){
@@ -137,35 +141,26 @@ function createNodes(){
             posx = i * sectionWidth + j * sectionWidth / NODES_PER_BRANCH;
             posy = heightToBottom * j / NODES_PER_BRANCH;
             
-            /*-----------------------------------------
-             * Aquí lo que debes hacer es que si el nodo está en el array
-             * correspondiente a su dificultad, idBranch sea true
-             -----------------------------------------*/
-            
-            // En caso de que este nodo se vaya a mover a otra rama tenemos que comprobar que:
-            // Si es la última rama no puede diverger hacia la derecha.
-            // Si es la primera rama no puede diverger hacia la izquierda.
-            
-            /*---------------------------------------------
-             * Esto ya no sirve ya que sólo vale para hacer algo aleatoriamente.
-             * Te propongo que prepares OTRO ARRAY para cada dificultad que diga 
-             * hacia qué nodo diverge y que aquí haga esto:
-             * idNextNode = array_de_next_nodes[i]
-            if(i <= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH || id < NODES_PER_BRANCH){//así nos aseguramos que vayamos a la derecha en la última rama
-             //así nos aseguramos de que vayamos a la derecha en la primera rama
-                if(isBranch){ 
-                    idNodeBranch = Math.random() > 0.5 || i >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH 
-                    ? id > NODES_PER_BRANCH ? id - NODES_PER_BRANCH + 1 : id + NODES_PER_BRANCH + 1 
-                    : id + NODES_PER_BRANCH + 1;
+            if( id === linkedNodes[NUM_BRANCHES][index_check_if_branch][0]){
+                isBranch = true;
+                idNodeBranch = linkedNodes[NUM_BRANCHES][index_check_if_branch][1];
+                if( index_check_if_branch < linkedNodes[NUM_BRANCHES].length - 1){
+                    index_check_if_branch += 1;
                 }
+                
+            }else{
+                idNodeBranch = null;
+                isBranch = false;
             }
-            */
+
             idNextNode = j < NODES_PER_BRANCH ? id + 1 : null;
             isUsed = false;
             var myNode = new BranchNode(id, posx, posy, idNextNode, idNodeBranch, isBranch, isUsed);
+            //var myNode = new BranchNode(id, posx, posy, idNextNode, isBranch, isUsed);
             nodes.push(myNode);
         }
     }
+    console.log("nodes", nodes);
 }
 
 /**
@@ -293,17 +288,14 @@ function drawBranches(){
         graphics.moveTo(i * SECTION_WIDTH + XOFFSET, 64);//moving position of graphic if you draw mulitple lines
         graphics.lineTo((i+1)*SECTION_WIDTH - 1, game.world.height - 64);
         graphics.endFill();
-        /*
-    for (var i = 0; i < NUM_BRANCHES; i++){
-        for(var j = 0; j < NODES_PER_BRANCH; j++){
-            if(nodes[j].isBranch){
-                graphics.moveTo(i * SECTION_WIDTH + XOFFSET, 64);//moving position of graphic if you draw mulitple lines
-                graphics.lineTo((i+1)*SECTION_WIDTH - 1, game.world.height - 64);
-                graphics.endFill();
-            }
-            */
-        }
     }
+    //Dibujamos las ramas que se cruzan
+    for( var j = 0; j < linkedNodes[NUM_BRANCHES].length; j++){
+        graphics.moveTo(nodes[linkedNodes[NUM_BRANCHES][j][0]].posx, nodes[linkedNodes[NUM_BRANCHES][j][0]].posy);
+        graphics.lineTo(nodes[linkedNodes[NUM_BRANCHES][j][1]].posx, nodes[linkedNodes[NUM_BRANCHES][j][1]].posy);
+        graphics.endFill();
+    }
+}
 
 function loadPlayAssetsB() {
     loadSprites();

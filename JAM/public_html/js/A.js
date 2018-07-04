@@ -30,9 +30,8 @@ var playStateA = {
 
 //-----------------------------------
 var NUM_ENEMIES = 8;                  // Numero de enemigos que varia con la dificutal
-NUM_BRANCHES = branchesTotal;               // Número de ramas. Varía con la dificultad.
+var NUM_BRANCHES = branchesTotal;               // Número de ramas. Varía con la dificultad.
 var NODES_PER_BRANCH = 5;           // Nodos en los que se puede divertir hacia otra rama.
-// var BRANCH_CHANCE = 0.3;         // Probabilidad de que un nodo sea una rama divergente. Esto debe variar con la dificultad. PARTE B
 var NUM_ENEMIES_POOL = 16;          // Enemies in the pool
 var NUM_SHOTS_POOL = 20;            // Bullets in the pool
 var NUM_LIFEITEM_POOL = 16;         // Life items in the pool
@@ -67,14 +66,14 @@ var exit;
 var timerClock;
 var exitingLevel;
 
-/*
- * var linkedNodes = {
- *      '3': // Aquí defines un array de nodos que van a diverger.
- *      '4': //---
- *      ....
- *      '8': 
- * }
- */
+var linkedNodes = {
+    3: [[1, 7], [12, 8]],
+    4: [[1, 7], [12, 8], [11, 17]],
+    5: [[1, 7], [12, 8], [11, 17], [17, 13], [23, 19]],
+    6: [[1, 7], [12, 8], [11, 17], [17, 13], [23, 19], [21, 27]],
+    7: [[1, 7], [12, 8], [11, 17], [17, 13], [23, 19], [21, 27], [32, 28]],
+    8: [[1, 7], [12, 8], [11, 17], [17, 13], [23, 19], [21, 27], [32, 28], [36, 32]]
+};
 
 /**
  * Función que nos permite generar el nodo de una rama.
@@ -86,12 +85,12 @@ var exitingLevel;
  * @param {Boolean} indica si está en uso por un enemigo o no.
  * @param {Boolean} isBranch dice si diverge hacia otra rama o no
  */
-function BranchNode(id, posx, posy, idNextNode, isBranch, isUsed){
+function BranchNode(id, posx, posy, idNextNode, idNodeBranch, isBranch, isUsed){
     this.id = id;
     this.posx = posx;
     this.posy = posy;
     this.idNextNode = idNextNode;
-    //this.idNodeBranch = idNodeBranch;
+    this.idNodeBranch = idNodeBranch;
     this.isBranch = isBranch;
     this.isUsed = isUsed;
 }
@@ -119,7 +118,10 @@ function createNodes(){
     var heightToBottom = game.world.height - 64;
     // Ancho de cada sección que ocupa una rama.
     var sectionWidth = game.world.width / NUM_BRANCHES;
-    var id, posx, posy, isBranch, idNextNode, isUsed;
+    var id, posx, posy, isBranch, idNextNode, idNodeBranch, isUsed;
+    // Con este índice vamos a comprobar en qué posición del array de linkedNodes nos encontramos.
+    // De esa forma nos ahorramos el tener que recorrer todo el array para cada nodo.
+    var index_check_if_branch = 0;
     // Si dividimos la altura del nivel en tantas partes como nodos por
     // rama hay, tenemos las posiciones en el eje Y de cada nodo.
     for (var i = 0; i < NUM_BRANCHES; i++){
@@ -132,23 +134,21 @@ function createNodes(){
             // posiciones en X.
             posx = i * sectionWidth + j * sectionWidth / NODES_PER_BRANCH;
             posy = heightToBottom * j / NODES_PER_BRANCH;
-            // isBranch = Math.random() < BRANCH_CHANCE ? true : false;
-            // En caso de que este nodo se vaya a mover a otra rama tenemos que comprobar que:
-            // Si es la última rama no puede diverger hacia la derecha.
-            // Si es la primera rama no puede diverger hacia la izquierda.
-            // i >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH así nos aseguramos que vayamos a la derecha en la última rama
-            // id > NODES_PER_BRANCH así nos aseguramos de que vayamos a la derecha en la primera rama
-            /* PARTE B
-            if(isBranch){ 
-                idNodeBranch = Math.random() > 0.5 || i >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH 
-                ? id > NODES_PER_BRANCH ? id - NODES_PER_BRANCH + 1 : id + NODES_PER_BRANCH + 1 
-                : id + NODES_PER_BRANCH + 1;
+            
+            if( i === linkedNodes[NUM_BRANCHES][index_check_if_branch][0]){
+                isBranch = true;
+                idNodeBranch = linkedNodes[NUM_BRANCHES][index_check_if_branch][1];
+                index_check_if_branch += 1;
+                
+            }else{
+                idNodeBranch = null;
+                isBranch = false;
             }
-            */
+
             idNextNode = j < NODES_PER_BRANCH ? id + 1 : null;
             isUsed = false;
-            // var myNode = new BranchNode(id, posx, posy, idNextNode, idNodeBranch, isBranch, isUsed);
-            var myNode = new BranchNode(id, posx, posy, idNextNode, isBranch, isUsed);
+            var myNode = new BranchNode(id, posx, posy, idNextNode, idNodeBranch, isBranch, isUsed);
+            //var myNode = new BranchNode(id, posx, posy, idNextNode, isBranch, isUsed);
             nodes.push(myNode);
         }
     }
@@ -265,6 +265,12 @@ function drawBranches(){
     for(var i = 0; i < NUM_BRANCHES; i++){
         graphics.moveTo(i * SECTION_WIDTH + XOFFSET, 64);//moving position of graphic if you draw mulitple lines
         graphics.lineTo((i+1)*SECTION_WIDTH - 1, game.world.height - 64);
+        graphics.endFill();
+    }
+    //Dibujamos las ramas que se cruzan
+    for( var j = 0; j < linkedNodes[3].length; j++){
+        graphics.moveTo(nodes[linkedNodes[NUM_BRANCHES][j][0]].posx, nodes[linkedNodes[NUM_BRANCHES][j][0]].posy);
+        graphics.lineTo(nodes[linkedNodes[NUM_BRANCHES][j][1]].posx, nodes[linkedNodes[NUM_BRANCHES][j][1]].posy);
         graphics.endFill();
     }
 }
