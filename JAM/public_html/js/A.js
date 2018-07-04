@@ -586,6 +586,7 @@ function updateLevel() {
     game.physics.arcade.overlap(player, stars, collectStar, null, this);
     game.physics.arcade.overlap(player, firstAids, getFirstAid, null, this);
     game.physics.arcade.overlap(shots, enemies_on_stage, destroyEnemy, null, this);
+    game.physics.arcade.overlap(player, lives_on_stage, getLife, null, this);
 
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;

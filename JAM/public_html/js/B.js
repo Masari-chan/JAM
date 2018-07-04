@@ -30,7 +30,7 @@ var playStateB = {
 
 //-----------------------------------
 var NUM_ENEMIES = 8;                    // Numero de enemigos que varia con la dificutal
-var NUM_BRANCHES = 8;                   // Número de ramas. Varía con la dificultad.
+var NUM_BRANCHES = 7;                   // Número de ramas. Varía con la dificultad.
 var NODES_PER_BRANCH = 5;               // Nodos en los que se puede divertir hacia otra rama.
 var BRANCH_CHANCE = 0.3;             // Probabilidad de que un nodo sea una rama divergente. Esto debe variar con la dificultad. PARTE B
 var NUM_ENEMIES_POOL = 16;              // Enemies in the pool
@@ -47,6 +47,7 @@ var branches = [];                      // Ramas por las que nos vamos a desplaz
 var BRANCH_COLOR = 0xd3ae2a;            // Color de la rama
 var BRANCH_LINE_WIDTH = 5;              // Grosor de la línea de la rama
 var LIFE_CHANCE = 0.7;                  // Probabilidad de que un enemigo suelte vida al matarlo.
+var TIME_TO_DESTROY = 1000;             // Tiempo que pasará para que se destruya un item.
 var XOFFSET = 15;
 var nodes = [];
 var lives_on_stage = [];
@@ -113,9 +114,10 @@ function Enemy(spritesheet, tween, plat, right, limit, nHits, idNode) {
     this.idNode = idNode;
 }
 
-function LifeItem(sprite, idNode){
+function LifeItem(sprite, idNode, isColliding = false){
     this.sprite = sprite;
     this.idNode = idNode;
+    this.isColliding = isColliding;
 }
 
 // Esta función crea los nodos por los que se van a mover los enemigos. 
@@ -198,7 +200,7 @@ function moveEnemies(){
 function moveLife(){
     if(lives_on_stage.length >= 1){
         for(var i = 0; i < lives_on_stage.length; i++){
-            moveLifeToNode(lives_on_stage[i], lives_on_stage[i].idNode + 1);
+            moveLifeToNode(lives_on_stage[i], lives_on_stage[i].idNode + 1, i);
         }
     }
 }
@@ -215,6 +217,7 @@ function moveToNode(enemy, node){
         // Activamos el nodo siguiente, ya que nos hemos movido a él.
         nodes[node].isUsed = true;
     }else{
+        nodes[enemy.idNode].isUsed = false;
         healthValue-=20;
         if(healthValue <= 0){
             endGame();
@@ -229,7 +232,7 @@ function moveToNode(enemy, node){
     }
 }
 
-function moveLifeToNode(lifeItem, node){
+function moveLifeToNode(lifeItem, node, lifeIndex){
     if(node % NODES_PER_BRANCH !== 0){
         lifeItem.position.x = nodes[node].posx;
         lifeItem.position.y = nodes[node].posy;
@@ -240,11 +243,12 @@ function moveLifeToNode(lifeItem, node){
         // Activamos el nodo siguiente, ya que nos hemos movido a él.
         nodes[node].isUsed = true;
     }else{
-        resetMember(lifeItem);
-        var enemyIndex = lives_on_stage.findIndex(function(e){
-            return e.alive === false;
-        });
-        lives_on_stage.splice(enemyIndex, 1);
+        nodes[lifeItem.idNode].isUsed = false;
+        lifeItem.position.y = game.world.height - 30;
+        game.time.events.add(TIME_TO_DESTROY, function (item){
+           item.kill();
+           lives_on_stage.splice(lifeIndex, 1);
+        }, this, lifeItem);
         
     }
 }
@@ -475,7 +479,6 @@ function createLifeItemPool(number_of_lives){
     lifeItemPool.enableBody = true;
     lifeItemPool.createMultiple(number_of_lives, 'mielgrande');
     lifeItemPool.forEach(setupPool, this);
-    lifeItemPool.setAll('checkWorldBounds', true);
     //game.time.events.loop(TIME_CREATE_ENEMIES, createLifeItem, this);
     game.time.events.loop(TIME_MOVE_ENEMIES, moveLife, this);
 }
@@ -622,7 +625,7 @@ function updateLevelB() {
     var hitPlatform = game.physics.arcade.collide(player, platforms, playerInPlatform, null, this);
 
     game.physics.arcade.overlap(shots, enemies_on_stage, destroyEnemy, null, this);
-    game.physics.arcade.collide(shots, lives_on_stage, getLife, null, this);
+    game.physics.arcade.overlap(lives_on_stage, player, getLife, null, this);
 
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
@@ -658,13 +661,10 @@ function updateLevelB() {
     manageShots();
 }
 
-function getLife(shot, lifeItem){
-    shot.kill();
-    lifeItem.kill();
-    var lifeItemIndex = lives_on_stage.findIndex(function(e){
-        return e.alive === false;
-    });
-    lives_on_stage.splice(lifeItemIndex, 1);
+function getLife(lifeItem, playerItem){
+    if(playerItem.key === "mielgrande"){
+        playerItem.kill();
+    }
     healthValue = Math.min(healthValue + healthAid, MAX_HEALTH);
     updateHealthBar();
 }
@@ -675,10 +675,10 @@ function destroyEnemy(shot, enemy){
     var enemyIndex = enemies_on_stage.findIndex(function(e){
         return e.alive === false;
     });
+    nodes[enemies_on_stage[enemyIndex].idNode].isUsed = false;
     enemies_on_stage.splice(enemyIndex, 1);
     if( Math.random() < CHANCE_TO_CREATE_LIFE_ITEM ){
         createLifeItem();
-        console.log("¡A TOPE CON EL MONSTER!");
     }
     /*
      * Aquí hay que meter el blast al destruir al enemigo y el sonido.
