@@ -67,6 +67,15 @@ var exit;
 var timerClock;
 var exitingLevel;
 
+/*
+ * var linkedNodes = {
+ *      '3': // Aquí defines un array de nodos que van a diverger.
+ *      '4': //---
+ *      ....
+ *      '8': 
+ * }
+ */
+
 /**
  * Función que nos permite generar el nodo de una rama.
  * @param {Number} id id del nodo de la rama

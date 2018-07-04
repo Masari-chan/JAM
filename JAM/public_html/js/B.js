@@ -69,6 +69,16 @@ var timerClock;
 var exitingLevel;
 
 /*
+ * var linkedNodes = {
+ *      '3': // Aquí defines un array de nodos que van a diverger en función del número de ramas.
+ *      '4': //---
+ *      ....
+ *      '8': 
+ * }
+ * 
+ */
+
+/*
  * Función que nos permite generar el nodo de una rama.
  * @param {Number} id id del nodo de la rama
  * @param {Number} posx posición x donde va a estar el nodo
@@ -126,10 +136,21 @@ function createNodes(){
             // posiciones en X.
             posx = i * sectionWidth + j * sectionWidth / NODES_PER_BRANCH;
             posy = heightToBottom * j / NODES_PER_BRANCH;
-            isBranch = Math.random() < BRANCH_CHANCE ? true : false;
+            
+            /*-----------------------------------------
+             * Aquí lo que debes hacer es que si el nodo está en el array
+             * correspondiente a su dificultad, idBranch sea true
+             -----------------------------------------*/
+            
             // En caso de que este nodo se vaya a mover a otra rama tenemos que comprobar que:
             // Si es la última rama no puede diverger hacia la derecha.
             // Si es la primera rama no puede diverger hacia la izquierda.
+            
+            /*---------------------------------------------
+             * Esto ya no sirve ya que sólo vale para hacer algo aleatoriamente.
+             * Te propongo que prepares OTRO ARRAY para cada dificultad que diga 
+             * hacia qué nodo diverge y que aquí haga esto:
+             * idNextNode = array_de_next_nodes[i]
             if(i <= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH || id < NODES_PER_BRANCH){//así nos aseguramos que vayamos a la derecha en la última rama
              //así nos aseguramos de que vayamos a la derecha en la primera rama
                 if(isBranch){ 
@@ -138,6 +159,7 @@ function createNodes(){
                     : id + NODES_PER_BRANCH + 1;
                 }
             }
+            */
             idNextNode = j < NODES_PER_BRANCH ? id + 1 : null;
             isUsed = false;
             var myNode = new BranchNode(id, posx, posy, idNextNode, idNodeBranch, isBranch, isUsed);
