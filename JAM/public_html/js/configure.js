@@ -14,7 +14,6 @@ var btnEasy, btnAvg, btnNgtm;
 function loadConfigAssets() {
     game.load.image('easyButton', 'assets/imgs/easyButton.png');
     game.load.image('avgButton', 'assets/imgs/averageButton.png');
-    game.load.image('ngtmButton', 'assets/imgs/nightmareButton.png');
 }
 
 function doConfig() {
@@ -30,8 +29,9 @@ function doConfig() {
     btnEasy.anchor.setTo(0.5, 0.5);
     btnAvg = game.add.button(game.world.width / 2, vSpace * 2, 'avgButton', onButtonPressed);
     btnAvg.anchor.setTo(0.5, 0.5);
-    btnNgtm = game.add.button(game.world.width / 2, vSpace * 3, 'ngtmButton', onButtonPressed);
+    /*btnNgtm = game.add.button(game.world.width / 2, vSpace * 3, 'ngtmButton', onButtonPressed);
     btnNgtm.anchor.setTo(0.5, 0.5);
+    */
 }
 
 function onButtonPressed(button) {
@@ -42,6 +42,8 @@ function onButtonPressed(button) {
         secondsToGo = DEFAULT_TIME;
         jumpsToKill = DEFAULT_JUMPS_TO_KILL;
         playerDeathTimePenalty = DEFAULT_PLAYER_DEATH_TIME_PENALTY;
+        nivel='A';
+
     } else if (button === btnAvg) {
         // do stuff here
         damage = DEFAULT_DAMAGE * 1.5;
@@ -49,14 +51,17 @@ function onButtonPressed(button) {
         secondsToGo = DEFAULT_TIME - 90;
         jumpsToKill = DEFAULT_JUMPS_TO_KILL + 1;
         playerDeathTimePenalty = DEFAULT_PLAYER_DEATH_TIME_PENALTY + 10;
-    } else {
+        nivel='B';
+
+    } /* else {
         // do stuff here
         damage = DEFAULT_DAMAGE * 2;
         healthAid = DEFAULT_HEALTH - 5;
         secondsToGo = DEFAULT_TIME - 150;
         jumpsToKill = DEFAULT_JUMPS_TO_KILL + 3;
         playerDeathTimePenalty = DEFAULT_PLAYER_DEATH_TIME_PENALTY + 25;
-    }
+        */
     // Come back to welcome
-    game.state.start('welcome');
+    game.state.start('difficulty');
+
 }

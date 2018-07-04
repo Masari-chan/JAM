@@ -121,5 +121,10 @@ function onConfigButtonPressed() {
 }
 
 function onPlayButtonPressed() {
-    game.state.start('A');
+    if(nivel=='A'){
+        game.state.start('A');
+    }
+    else{
+        game.state.start('B');
+    }
 }

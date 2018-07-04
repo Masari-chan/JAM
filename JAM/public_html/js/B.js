@@ -30,9 +30,9 @@ var playStateB = {
 
 //-----------------------------------
 var NUM_ENEMIES = 8;                    // Numero de enemigos que varia con la dificutal
-var NUM_BRANCHES = 5;                   // Número de ramas. Varía con la dificultad.
+NUM_BRANCHES = branchesTotal;                   // Número de ramas. Varía con la dificultad.
 var NODES_PER_BRANCH = 5;               // Nodos en los que se puede divertir hacia otra rama.
-// var BRANCH_CHANCE = 0.3;             // Probabilidad de que un nodo sea una rama divergente. Esto debe variar con la dificultad. PARTE B
+var BRANCH_CHANCE = 0.3;             // Probabilidad de que un nodo sea una rama divergente. Esto debe variar con la dificultad. PARTE B
 var NUM_ENEMIES_POOL = 16;              // Enemies in the pool
 var NUM_SHOTS_POOL = 20;                // Bullets in the pool
 var NUM_LIFEITEM_POOL = 16;             // Life items in the pool
@@ -68,7 +68,7 @@ var exit;
 var timerClock;
 var exitingLevel;
 
-/**
+/*
  * Función que nos permite generar el nodo de una rama.
  * @param {Number} id id del nodo de la rama
  * @param {Number} posx posición x donde va a estar el nodo
@@ -78,13 +78,15 @@ var exitingLevel;
  * @param {Boolean} indica si está en uso por un enemigo o no.
  * @param {Boolean} isBranch dice si diverge hacia otra rama o no
  */
-function BranchNode(id, posx, posy, idNextNode, isBranch, isUsed){
+
+function BranchNode(id, posx, posy, idNextNode,idNodeBranch, isBranch, isUsed){
     this.id = id;
     this.posx = posx;
     this.posy = posy;
     this.idNextNode = idNextNode;
-    //this.idNodeBranch = idNodeBranch;
+    this.idNodeBranch = idNodeBranch;
     this.isBranch = isBranch;
+    
     this.isUsed = isUsed;
 }
 
@@ -111,7 +113,7 @@ function createNodes(){
     var heightToBottom = game.world.height - 64;
     // Ancho de cada sección que ocupa una rama.
     var sectionWidth = (game.world.width - PLAYER_COLLIDE_OFFSET_X) / NUM_BRANCHES;
-    var id, posx, posy, isBranch, idNextNode, isUsed;
+    var id, posx, posy, isBranch, idNextNode, isUsed,idNodeBranch;
     // Si dividimos la altura del nivel en tantas partes como nodos por
     // rama hay, tenemos las posiciones en el eje Y de cada nodo.
     for (var i = 0; i < NUM_BRANCHES; i++){
@@ -124,23 +126,21 @@ function createNodes(){
             // posiciones en X.
             posx = i * sectionWidth + j * sectionWidth / NODES_PER_BRANCH;
             posy = heightToBottom * j / NODES_PER_BRANCH;
-            // isBranch = Math.random() < BRANCH_CHANCE ? true : false;
+            isBranch = Math.random() < BRANCH_CHANCE ? true : false;
             // En caso de que este nodo se vaya a mover a otra rama tenemos que comprobar que:
             // Si es la última rama no puede diverger hacia la derecha.
             // Si es la primera rama no puede diverger hacia la izquierda.
-            // i >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH así nos aseguramos que vayamos a la derecha en la última rama
-            // id > NODES_PER_BRANCH así nos aseguramos de que vayamos a la derecha en la primera rama
-            /* PARTE B
-            if(isBranch){ 
-                idNodeBranch = Math.random() > 0.5 || i >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH 
-                ? id > NODES_PER_BRANCH ? id - NODES_PER_BRANCH + 1 : id + NODES_PER_BRANCH + 1 
-                : id + NODES_PER_BRANCH + 1;
+            if(i <= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH || id < NODES_PER_BRANCH){//así nos aseguramos que vayamos a la derecha en la última rama
+             //así nos aseguramos de que vayamos a la derecha en la primera rama
+                if(isBranch){ 
+                    idNodeBranch = Math.random() > 0.5 || i >= ( NUM_BRANCHES - 1 ) * NODES_PER_BRANCH 
+                    ? id > NODES_PER_BRANCH ? id - NODES_PER_BRANCH + 1 : id + NODES_PER_BRANCH + 1 
+                    : id + NODES_PER_BRANCH + 1;
+                }
             }
-            */
             idNextNode = j < NODES_PER_BRANCH ? id + 1 : null;
             isUsed = false;
-            // var myNode = new BranchNode(id, posx, posy, idNextNode, idNodeBranch, isBranch, isUsed);
-            var myNode = new BranchNode(id, posx, posy, idNextNode, isBranch, isUsed);
+            var myNode = new BranchNode(id, posx, posy, idNextNode, idNodeBranch, isBranch, isUsed);
             nodes.push(myNode);
         }
     }
@@ -157,10 +157,8 @@ function moveEnemies(){
         for(var i = 0; i < enemies_on_stage.length; i++){
             moveToNode(enemies_on_stage[i], enemies_on_stage[i].idNode + 1);
         }
-        /*enemies_on_stage.forEach(function(enemy){
-            //var enemyNode = nodes[enemy.idNode];
-            
-             PARTE B
+            enemies_on_stage.forEach(function(enemy){
+            var enemyNode = nodes[enemy.idNode];
             if( enemyNode.isBranch ){
                 var nextNode = enemyNode.idNodeBranch;
                 // Comprobamos si el siguiente nodo está en uso y, si no lo está,
@@ -176,7 +174,7 @@ function moveEnemies(){
                 }
             }
         });
-        */
+        
     }
 }
 
@@ -248,9 +246,11 @@ function placeItemAtBranch(item){
     item.reset(myNode.posx, myNode.posy);
     // Si el nodo no está en uso, colocamos al enemigo ahí.
     if( !myNode.isUsed ){
-        //enemy.sprite = game.add.sprite(myNode.posx, myNode.posy, 'enemy');
-        //enemy.body.sprite.body.x = myNode.posx + ENEMY_X_OFFSET;
-        //enemy.body.sprite.body.y = myNode.posy + ENEMY_Y_OFFSET;
+        /*
+        enemy.sprite = game.add.sprite(myNode.posx, myNode.posy, 'enemy');
+        enemy.body.sprite.body.x = myNode.posx + ENEMY_X_OFFSET;
+        enemy.body.sprite.body.y = myNode.posy + ENEMY_Y_OFFSET;
+        */
         item.idNode = idNodo;
         myNode.isUsed = true;
     }
@@ -271,8 +271,17 @@ function drawBranches(){
         graphics.moveTo(i * SECTION_WIDTH + XOFFSET, 64);//moving position of graphic if you draw mulitple lines
         graphics.lineTo((i+1)*SECTION_WIDTH - 1, game.world.height - 64);
         graphics.endFill();
+        /*
+    for (var i = 0; i < NUM_BRANCHES; i++){
+        for(var j = 0; j < NODES_PER_BRANCH; j++){
+            if(nodes[j].isBranch){
+                graphics.moveTo(i * SECTION_WIDTH + XOFFSET, 64);//moving position of graphic if you draw mulitple lines
+                graphics.lineTo((i+1)*SECTION_WIDTH - 1, game.world.height - 64);
+                graphics.endFill();
+            }
+            */
+        }
     }
-}
 
 function loadPlayAssetsB() {
     loadSprites();
@@ -361,7 +370,7 @@ function createLevelB() {
     // Be aware that enemies ara not in a group. Each enemy is an instance and is stored in the array enemies
     createGround();
 
-    createPlatforms();
+   // createPlatforms();
     
 
     // Now, set time and create the HUD
@@ -523,7 +532,7 @@ function createGround() {
         setupStar(levelConfig.ground.stars[i], ground.y);
     */
 }
-
+/*
 function createPlatforms() {
     levelConfig.platformData.forEach(createPlatform, this);
 }
@@ -532,7 +541,7 @@ function createPlatform(element) {
     var ledge = platforms.create(element.x, game.world.height - element.y, 'ground');
     ledge.body.immovable = true;
 }
-
+*/
 function setupEnemy(enemy, plat, posx) {
     var isRight;
     var limit;
@@ -795,7 +804,8 @@ function clearLevel() {
     stars.removeAll(true);
 }
 
+
 function goToWelcome() {
     game.world.setBounds(0, 0, game.width, game.height);
     game.state.start('welcome');
-}
+ }

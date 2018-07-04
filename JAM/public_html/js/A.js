@@ -30,7 +30,7 @@ var playStateA = {
 
 //-----------------------------------
 var NUM_ENEMIES = 8;                  // Numero de enemigos que varia con la dificutal
-var NUM_BRANCHES = 5;               // Número de ramas. Varía con la dificultad.
+NUM_BRANCHES = branchesTotal;               // Número de ramas. Varía con la dificultad.
 var NODES_PER_BRANCH = 5;           // Nodos en los que se puede divertir hacia otra rama.
 // var BRANCH_CHANCE = 0.3;         // Probabilidad de que un nodo sea una rama divergente. Esto debe variar con la dificultad. PARTE B
 var NUM_ENEMIES_POOL = 16;          // Enemies in the pool

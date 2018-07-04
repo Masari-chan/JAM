@@ -36,7 +36,7 @@ function startGame() {
     
     game.state.add('A', playStateA);
     game.state.add('B', playStateB);
-
+    game.state.add('difficulty', difState);
 
     game.state.start('welcome');
 }
