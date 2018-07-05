@@ -33,10 +33,10 @@ function startGame() {
     // Config Screen
     game.state.add('config', configState);
     // Play Screen
-    
-    game.state.add('A', playStateA);
     game.state.add('B', playStateB);
-    game.state.add('difficulty', difState);
+    game.state.add('chooselevel', chooseState);
+    game.state.add('end', endState);
+    game.state.add('shop', shopState);
 
     game.state.start('welcome');
 }

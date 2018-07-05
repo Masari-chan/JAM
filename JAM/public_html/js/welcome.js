@@ -8,14 +8,19 @@ var DEFAULT_DAMAGE = 10;
 var DEFAULT_HEALTH = 10;
 var DEFAULT_TIME = 480;
 var DEFAULT_JUMPS_TO_KILL = 2;
+var BULLET_SPEED_FACTOR = 1;
 var DEFAULT_PLAYER_DEATH_TIME_PENALTY = 15;
-
+var DEFAULT_NUM_BRANCHES=3;
+var DEFAULT_CONTROLS='k';
 var damage = DEFAULT_DAMAGE;
 var healthAid = DEFAULT_HEALTH;
 var secondsToGo = DEFAULT_TIME;
 var jumpsToKill = DEFAULT_JUMPS_TO_KILL;
 var playerDeathTimePenalty = DEFAULT_PLAYER_DEATH_TIME_PENALTY;
-
+var branchesTotal=DEFAULT_NUM_BRANCHES;
+var controls=DEFAULT_CONTROLS;
+var bulletSpeed=BULLET_SPEED_FACTOR;
+var score=0;
 var initialState = {
     preload: loadAssets,
     create: displayScreen
@@ -121,12 +126,5 @@ function onConfigButtonPressed() {
 }
 
 function onPlayButtonPressed() {
-    //if(nivel==='A'){
-        game.state.start('A');
-        /*
-    }
-    else{
-        game.state.start('B');
-    }
-    */
+    game.state.start('chooselevel');
 }
