@@ -46,6 +46,7 @@ var BRANCH_LINE_WIDTH = 5;              // Grosor de la línea de la rama
 var LIFE_CHANCE = 0.7;                  // Probabilidad de que un enemigo suelte vida al matarlo.
 var TIME_TO_DESTROY = 1000;             // Tiempo que pasará para que se destruya un item.
 var BRANCH_MARGIN_TOP = 64;             // Margen desde el que se van a dibujar las líneas
+var SCORE_TO_END_GAME = 500;            // Puntuación para acabar el juego.
 var SCORE_TO_NEXT_LEVEL = 40;
 var XOFFSET = 15;
 var PLAYER_HALF_WIDTH = 40;
@@ -54,7 +55,7 @@ var lives_on_stage = [];
 var enemyPool;
 var lifeItemPool;
 var hudGroup, healthBar, healthValue, healthTween, hudTime;
-var remainingTime;
+var remainingTime = 0;
 var levelConfig;
 var platforms, ground;
 var enemies = [];
@@ -98,7 +99,6 @@ function BranchNode(id, posx, posy, idNextNode,idNodeBranch, isBranch, isUsed){
     this.idNextNode = idNextNode;
     this.idNodeBranch = idNodeBranch;
     this.isBranch = isBranch;
-    
     this.isUsed = isUsed;
 }
 
@@ -162,7 +162,6 @@ function createNodes(){
             idNextNode = j < NODES_PER_BRANCH ? id + 1 : null;
             isUsed = false;
             var myNode = new BranchNode(id, posx, posy, idNextNode, idNodeBranch, isBranch, isUsed);
-            //var myNode = new BranchNode(id, posx, posy, idNextNode, isBranch, isUsed);
             nodes.push(myNode);
         }
     }
@@ -173,8 +172,6 @@ function createNodes(){
  * Esta función mueve al enemigo
  * 
  */
-
-
 function moveEnemies(){
     if(enemies_on_stage.length >= 1){
         for(var i = 0; i < enemies_on_stage.length; i++){
@@ -197,7 +194,6 @@ function moveEnemies(){
                 }
             }
         });
-        
     }
 }
 
@@ -232,7 +228,6 @@ function moveToNode(enemy, node){
             return e.alive === false;
         });
         enemies_on_stage.splice(enemyIndex, 1);
-        
     }
 }
 
@@ -272,11 +267,6 @@ function placeItemAtBranch(item){
     item.reset(myNode.posx, myNode.posy);
     // Si el nodo no está en uso, colocamos al enemigo ahí.
     if( !myNode.isUsed ){
-        /*
-        enemy.sprite = game.add.sprite(myNode.posx, myNode.posy, 'enemy');
-        enemy.body.sprite.body.x = myNode.posx + ENEMY_X_OFFSET;
-        enemy.body.sprite.body.y = myNode.posy + ENEMY_Y_OFFSET;
-        */
         item.idNode = idNodo;
         myNode.isUsed = true;
     }
@@ -306,11 +296,9 @@ function drawBranches(){
 }
 
 function getXOffset(){
-
     // Obtenemos el ángulo formado entre el primer nodo y el punto del suelo donde va a llegar
     var angle = Math.atan(SECTION_WIDTH / (game.world.height - 64) )
-    return Math.tan(angle) * BRANCH_MARGIN_TOP; 
-    
+    return Math.tan(angle) * BRANCH_MARGIN_TOP;  
 }
 
 function drawIntermediateBranches(){
@@ -369,72 +357,37 @@ function createLevel() {
     exitingLevel = false;
     // Set World bounds (same size as the image background in this case)
     game.world.setBounds(0, 0, 800, 600);
-
     // Background
     var bg = game.add.tileSprite(0, 0, game.world.width, game.world.height, 'bgGame');
-    
     // Smooth scrolling of the background in both X and Y axis
     bg.scrollFactorX = 0.7;
     bg.scrollFactorY = 0.7;
-    
-    
-
-    // Collide with this image to exit level
-    /*
-    exit = game.add.sprite(game.world.width - 100, game.world.height - 64, 'exit');
-    game.physics.arcade.enable(exit);
-    exit.anchor.setTo(0, 1);
-    exit.body.setSize(88, 58, 20, 33);
-    */
-
     // Create sounds
     createSounds();
     // Create nodes
-
     createNodes();
-    // Create groups with a pool of objects
-    
+    // Create groups with a pool of object
     createAids();
     createShots();
-
-
     // Get level data from JSON
     levelConfig = JSON.parse(game.cache.getText('level'));
-
     platforms = game.add.group();
-
     platforms.enableBody = true;
-
-    // Create ground and platforms (with enemies, stars and aids) according to JSON data
-    // Be aware that enemies ara not in a group. Each enemy is an instance and is stored in the array enemies
     createGround();
-
-   // createPlatforms();
-    
-
-    // Now, set time and create the HUD
-    remainingTime = secondsToGo;
     createHUD();
-    
-    // Create player. Initial position according to JSON data
-    // El jugador se va a pover del final de una rama al final de la siguiente.
     
     // Ramas por donde van a bajar los enemigos.
     drawBranches();
     createPlayer();
 
-
-
     //  Our controls.
-        cursors = game.input.keyboard.createCursorKeys();
-        keySpace = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+    cursors = game.input.keyboard.createCursorKeys();
+    keySpace = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
     // Update elapsed time each second
     createLifeItemPool(NUM_LIFEITEM_POOL);
     createEnemyPool(NUM_ENEMIES_POOL);
     createBulletPool(NUM_SHOTS_POOL);
     
-    
-    //game.time.events.loop(TIME_MOVE_ENEMIES, moveEnemies(), this);
     timerClock = game.time.events.loop(Phaser.Timer.SECOND, updateTime, this);
 }
 
@@ -444,14 +397,11 @@ function createPlayer(){
     player.anchor.setTo(0.5, 0.5);
     player.key = "Player";
     game.physics.arcade.enable(player);
-    
-     
 
     //  Player physics properties. Give the little guy a slight bounce.
     player.body.bounce.y = 0.2;
     player.body.gravity.y = BODY_GRAVITY;
     player.body.collideWorldBounds = true;
-    
 
     // Camera follows the player inside the world
     game.camera.follow(player);
@@ -507,7 +457,6 @@ function createLifeItemPool(number_of_lives){
     lifeItemPool.enableBody = true;
     lifeItemPool.createMultiple(number_of_lives, 'mielgrande');
     lifeItemPool.forEach(setupPool, this);
-    //game.time.events.loop(TIME_CREATE_ENEMIES, createLifeItem, this);
     game.time.events.loop(TIME_MOVE_ENEMIES, moveLife, this);
 }
 
@@ -560,27 +509,9 @@ function createGround() {
     ground = platforms.create(0, game.world.height - 64, 'ground');
     ground.scale.setTo(2.75, 2); // 400x32 ---> 1100x64
     ground.body.immovable = true;
-    /*
-    for (var i = 0, max = NUM_ENEMIES; i < max; i++)
-        setupEnemy(levelConfig.ground.enemies[0], ground,(i*(game.world.width-100))/NUM_ENEMIES);
 
-    for (var i = 0, max = levelConfig.ground.aids.length; i < max; i++)
-        setupAid(levelConfig.ground.aids[i], ground.y);
-
-    for (var i = 0, max = levelConfig.ground.stars.length; i < max; i++)
-        setupStar(levelConfig.ground.stars[i], ground.y);
-    */
-}
-/*
-function createPlatforms() {
-    levelConfig.platformData.forEach(createPlatform, this);
 }
 
-function createPlatform(element) {
-    var ledge = platforms.create(element.x, game.world.height - element.y, 'ground');
-    ledge.body.immovable = true;
-}
-*/
 function setupEnemy(enemy, plat, posx) {
     var isRight;
     var limit;
@@ -622,8 +553,6 @@ function setupAid(aid, floorY) {
 
 
 function createHUD() {
-    //puntuacion--score--no funciona-----------------------------------------------------------------------------------------------
-    
     scoreText = game.add.text(650, 5, 'Score: ' + score,{fontSize: '25px', fill: '#000'});
     hudGroup = game.add.group();
     hudGroup.create(5, 5, 'heart');
@@ -648,21 +577,17 @@ function updateLevel() {
 
     if (cursors.left._justUp) {
         //  Move to the left
-        // player.body.x = player.body.x - ((game.world.width)/NUM_ENEMIES);
         player.body.x = player.body.x > SECTION_WIDTH
                 ? player.body.x - SECTION_WIDTH
                 : player.body.x;
-        //player.body.velocity.x = -PLAYER_VELOCITY;
         player.animations.play('left');
         toRight = false;
         cursors.left._justUp=false;
     } else if (cursors.right._justUp) {
         //  Move to the right
-        //player.body.x = player.body.x + ((game.world.width)/NUM_ENEMIES);
         player.body.x = player.body.x < game.world.width
                 ? player.body.x + SECTION_WIDTH
                 : player.body.x;
-        //player.body.velocity.x = PLAYER_VELOCITY;
         player.animations.play('right');
         toRight = true;
         cursors.right._justUp=false;
@@ -697,10 +622,27 @@ function destroyEnemy(shot, enemy){
      */
     score=score + POINTS_PER_KILL;
     scoreText.setText("Score: "+score);
+    if(score >= SCORE_TO_END_GAME){
+        resetInput();
+        soundOutOfTime.play();
+        stopPlayer();
+        game.time.events.remove(timerClock);
+        game.time.events.add(2500, endGame, this);
+    }
     if(score >= SCORE_TO_NEXT_LEVEL && nivel !== 'B'){
         getToLevelB();
-    }
-    
+        showLevelText();
+    }   
+}
+
+function showLevelText(){
+    var style = { font: "bold 32px Arial", fill: "#fff", boundsAlignH: "center", boundsAlignV: "middle" };
+    var levelText = game.add.text(0, 0, "WELCOME TO THE NEXT LEVEL!", style);
+    levelText.setShadow(3, 3, 'rgba(0,0,0,0.5)', 2);
+    levelText.setTextBounds(0, 100, game.world.width, 100);
+    game.time.events.add(TIME_TO_DESTROY, function (item){
+        item.kill();
+    }, this, levelText);
 }
 
 function getToLevelB(){
@@ -720,8 +662,6 @@ function fireShot(){
     // Ya que a mayor número de ramas, mayor ángulo de disparo.
     var vy = - player.y / bulletSpeed;
     var vx = - SECTION_WIDTH / bulletSpeed;
-    // var vy = -300;
-    // var vx = -100;
     shoot(x,y,vy,vx);
 }
 
@@ -738,14 +678,6 @@ function shoot(x,y,vy,vx) {
 function playerInPlatform(player, platform) {
     if (player.body.touching.down)
         playerPlatform = platform;
-}
-
-
-function getFirstAid(player, aid) {
-    soundGetAid.play();
-    aid.kill();
-    healthValue = Math.min(MAX_HEALTH, healthValue + healthAid);
-    updateHealthBar();
 }
 
 function updateHealthBar() {
@@ -776,15 +708,8 @@ function pad(n, width, z) {
 }
 
 function updateTime() {
-    remainingTime = Math.max(0, remainingTime - 1);
+    remainingTime += 1;
     hudTime.setText(setRemainingTime(remainingTime));
-    if (remainingTime === 0) {
-        resetInput();
-        soundOutOfTime.play();
-        stopPlayer();
-        game.time.events.remove(timerClock);
-        game.time.events.add(2500, endGame, this);
-    }
 }
 
 function stopPlayer() {
@@ -800,22 +725,9 @@ function resetInput() {
     cursors.down.reset(true);
 }
 
-
-
 function endGame() {
     clearLevel();
     goToWelcome();
-}
-
-function nextLevel() {
-    clearLevel();
-    levelToPlay += 1;
-    if (levelToPlay > levelsData.length)
-        goToWelcome();
-    else {
-        game.input.enabled = true;
-        game.state.start('play');
-    }
 }
 
 function clearLevel() {
